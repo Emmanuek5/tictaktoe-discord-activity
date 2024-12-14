@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 230 35% 7%; /* Deep blue-black */
+    --foreground: 60 9.1% 97.8%;
+    --card: 224 40% 10%; /* Slightly lighter deep blue */
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 224 40% 10%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 250 70% 60%; /* Vibrant purple */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 40% 15%; /* Deep blue-purple */
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 224 40% 15%;
+    --muted-foreground: 220 20% 70%;
+    --accent: 250 70% 20%; /* Deep purple */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 224 40% 15%;
+    --input: 224 40% 12%;
+    --ring: 250 70% 60%;
+    --chart-1: 250 70% 60%; /* Purple */
+    --chart-2: 230 70% 50%; /* Blue */
+    --chart-3: 280 70% 55%; /* Light purple */
+    --chart-4: 200 70% 50%; /* Cyan */
+    --chart-5: 320 70% 55%; /* Pink */
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 230 35% 7%; /* Deep blue-black */
+    --foreground: 60 9.1% 97.8%;
+    --card: 224 40% 10%; /* Slightly lighter deep blue */
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 224 40% 10%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 250 70% 60%; /* Vibrant purple */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 40% 15%; /* Deep blue-purple */
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 224 40% 15%;
+    --muted-foreground: 220 20% 70%;
+    --accent: 250 70% 20%; /* Deep purple */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 224 40% 15%;
+    --input: 224 40% 12%;
+    --ring: 250 70% 60%;
+    --chart-1: 250 70% 60%; /* Purple */
+    --chart-2: 230 70% 50%; /* Blue */
+    --chart-3: 280 70% 55%; /* Light purple */
+    --chart-4: 200 70% 50%; /* Cyan */
+    --chart-5: 320 70% 55%; /* Pink */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
