@@ -2,71 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --game-black: #0F0F0F;
+  --game-blue: #2563EB;
+  --game-purple: #7C3AED;
+  --game-light-blue: #60A5FA;
+  --game-light-purple: #A78BFA;
+  --radius: 0.5rem;
+}
+
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #0F0F0F;
+  color: #FFFFFF;
 }
 
 @layer base {
   :root {
-    --background: 230 35% 7%; /* Deep blue-black */
-    --foreground: 60 9.1% 97.8%;
-    --card: 224 40% 10%; /* Slightly lighter deep blue */
-    --card-foreground: 60 9.1% 97.8%;
-    --popover: 224 40% 10%;
-    --popover-foreground: 60 9.1% 97.8%;
-    --primary: 250 70% 60%; /* Vibrant purple */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 224 40% 15%; /* Deep blue-purple */
-    --secondary-foreground: 60 9.1% 97.8%;
-    --muted: 224 40% 15%;
-    --muted-foreground: 220 20% 70%;
-    --accent: 250 70% 20%; /* Deep purple */
-    --accent-foreground: 0 0% 100%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 224 40% 15%;
-    --input: 224 40% 12%;
-    --ring: 250 70% 60%;
-    --chart-1: 250 70% 60%; /* Purple */
-    --chart-2: 230 70% 50%; /* Blue */
-    --chart-3: 280 70% 55%; /* Light purple */
-    --chart-4: 200 70% 50%; /* Cyan */
-    --chart-5: 320 70% 55%; /* Pink */
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
-  .dark {
-    --background: 230 35% 7%; /* Deep blue-black */
-    --foreground: 60 9.1% 97.8%;
-    --card: 224 40% 10%; /* Slightly lighter deep blue */
-    --card-foreground: 60 9.1% 97.8%;
-    --popover: 224 40% 10%;
-    --popover-foreground: 60 9.1% 97.8%;
-    --primary: 250 70% 60%; /* Vibrant purple */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 224 40% 15%; /* Deep blue-purple */
-    --secondary-foreground: 60 9.1% 97.8%;
-    --muted: 224 40% 15%;
-    --muted-foreground: 220 20% 70%;
-    --accent: 250 70% 20%; /* Deep purple */
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 224 40% 15%;
-    --input: 224 40% 12%;
-    --ring: 250 70% 60%;
-    --chart-1: 250 70% 60%; /* Purple */
-    --chart-2: 230 70% 50%; /* Blue */
-    --chart-3: 280 70% 55%; /* Light purple */
-    --chart-4: 200 70% 50%; /* Cyan */
-    --chart-5: 320 70% 55%; /* Pink */
-  }
-}
 
-@layer base {
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .game-button {
+    @apply bg-blue hover:bg-light-blue text-white font-bold py-2 px-4 rounded transition-colors duration-200;
+  }
+  
+  .game-button-secondary {
+    @apply bg-purple hover:bg-light-purple text-white font-bold py-2 px-4 rounded transition-colors duration-200;
+  }
+
+  .game-border {
+    @apply border-2 border-blue rounded-lg;
+  }
+
+  .game-gradient {
+    @apply bg-gradient-to-r from-blue to-purple;
+  }
+
+  .game-box {
+    @apply rounded-xl border p-6;
+  }
+
+  .game-box-blue {
+    @apply game-box border-blue bg-blue/20;
+  }
+
+  .game-box-purple {
+    @apply game-box border-purple bg-purple/20;
   }
 }
