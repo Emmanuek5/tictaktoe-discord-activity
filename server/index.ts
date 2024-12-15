@@ -7,8 +7,6 @@ import { initRedis, saveGameState, getGameState, deleteGameState } from './db/re
 import { createNewGame, makeMove } from './game';
 import { GameMove, JoinGamePayload, GameState } from './types';
 import { getBestMove } from './ai';
-import * as dotenv from 'dotenv';
-dotenv.config();
 
 const app = express();
 app.use(cors());
