@@ -12,10 +12,13 @@ COPY bun.lockb ./
 RUN bun install
 
 # Copy application source files
+
+COPY ./.env .
+
 COPY . .
 
 # Copy environment file
-COPY .env .env
+
 # Expose the port the socket server runs on
 EXPOSE 4000
 
