@@ -7,10 +7,11 @@ COPY package*.json ./
 COPY bun.lockb ./
 
 # Install dependencies with Bun
-RUN bun install
+RUN bun install express socket.io dotenv cors pg redis
 
-# Copy only necessary files for the socket server
-COPY . . 
+# Copy application files
+COPY . .
+
 # Expose the port the socket server runs on
 EXPOSE 4000
 
