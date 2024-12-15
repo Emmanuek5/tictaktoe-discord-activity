@@ -6,14 +6,14 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:30034"
+      - "30034:3000"
     environment:
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_PUBLIC_APP_URL=http://localhost:30034
       - NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
       - REDIS_URL=redis://redis:6379/0
-      - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/discord-activity
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/discord-activity
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=discord-activity
@@ -23,9 +23,12 @@ services:
       - .:/app
       - /app/node_modules
     depends_on:
-      - redis
-      - postgres
-      - socket-server
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      socket-server:
+        condition: service_started
 
   socket-server:
     build:
@@ -35,25 +38,32 @@ services:
       - "4000:4000"
     environment:
       - REDIS_URL=redis://redis:6379/0
-      - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/discord-activity
+      - POSTGRES_URL=postgres://postgres:postgres@postgres:5432/discord-activity
       - SOCKET_PORT=4000
     volumes:
       - .:/app
       - /app/node_modules
     depends_on:
-      - redis
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   postgres:
     image: postgres:15-alpine
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=discord-activity
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -61,6 +71,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
