@@ -5,19 +5,14 @@ FROM oven/bun
 WORKDIR /app
 
 # Copy package manager files first (optimize caching)
-COPY package*.json ./ 
+COPY package*.json ./
 COPY bun.lockb ./
 
 # Install dependencies with Bun
 RUN bun install
 
 # Copy application source files
-
-COPY ./.env .
-
 COPY . .
-
-# Copy environment file
 
 # Expose the port the socket server runs on
 EXPOSE 4000
