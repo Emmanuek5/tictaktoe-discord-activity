@@ -1,19 +1,28 @@
+# Use the latest Bun image as the base
 FROM oven/bun:latest
 
+# Set the working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package manager files first (optimize caching)
+COPY package*.json ./ 
 COPY bun.lockb ./
 
 # Install dependencies with Bun
-RUN bun install --frozen-lockfile
+RUN bun install
 
-# Copy application files
+# Copy application source files
 COPY . .
+
+# Copy environment file
+COPY ./.env ./server/.env
 
 # Expose the port the socket server runs on
 EXPOSE 4000
 
-# Start the socket server directly with Bun
-CMD ["bun", "run", "server/index.ts"]
+# Healthcheck to ensure the server is running
+HEALTHCHECK --interval=30s --timeout=10s \
+    CMD curl -f http://localhost:4000 || exit 1
+
+# Start the application
+CMD ["bun", "server/index.ts"]
