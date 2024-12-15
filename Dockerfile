@@ -20,7 +20,7 @@ COPY contexts ./contexts
 COPY lib ./lib
 COPY public ./public
 COPY types ./types
-COPY server/types ./server/types
+COPY server/types.ts ./server/types.ts
 COPY utils ./utils
 
 # Build the application
