@@ -1,15 +1,30 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`app.localhost`)"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
     environment:
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-      - NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+      - NEXT_PUBLIC_APP_URL=http://app.localhost
+      - NEXT_PUBLIC_SOCKET_URL=http://socket.localhost
       - REDIS_URL=redis://redis:6379/0
       - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/discord-activity
       - POSTGRES_USER=${POSTGRES_USER}
@@ -31,8 +46,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.socket
-    ports:
-      - "4000:4000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.socket.rule=Host(`socket.localhost`)"
+      - "traefik.http.services.socket.loadbalancer.server.port=4000"
     environment:
       - REDIS_URL=redis://redis:6379/0
       - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/discord-activity
