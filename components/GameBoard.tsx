@@ -44,7 +44,10 @@ export function GameBoard({
             key={index}
             onClick={() => onMove(index)}
             disabled={
-              !isPlayerTurn || !!cell || gameState.winner || gameState.isDraw
+              !isPlayerTurn ||
+              !!cell ||
+              gameState.winner === undefined ||
+              gameState.isDraw
             }
             className={cn(
               "aspect-square text-4xl font-bold flex items-center justify-center",
