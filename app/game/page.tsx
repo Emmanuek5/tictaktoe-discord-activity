@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { io } from "socket.io-client";
 import { GameState } from "@/server/types";
 import { ParticipantsResponse, DiscordParticipant } from "@/types/discord";
@@ -21,7 +21,7 @@ const AI_PARTICIPANT: DiscordParticipant = {
   global_name: "🤖 AI Opponent",
 };
 
-export default function GamePage() {
+function GamePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isAIGame, setIsAIGame] = useState(false);
@@ -226,74 +226,86 @@ export default function GamePage() {
   }
 
   return (
-    <main className="min-h-screen bg-game-blue-darker p-8">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
-        <div className="flex flex-col items-center justify-center">
-          <div className="mb-8 flex items-center justify-between w-full">
-            <button
-              onClick={() => router.push("/")}
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-game-blue-dark/50 hover:bg-game-blue-dark text-white transition-colors"
-            >
-              ← Back to Home
-            </button>
-            <h1 className="text-2xl font-bold text-white">
-              {isAIGame ? "Playing against AI" : "Multiplayer Game"}
-            </h1>
+    <>
+      <Suspense>
+        <main className="min-h-screen bg-game-blue-darker p-8">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8">
+            <div className="flex flex-col items-center justify-center">
+              <div className="mb-8 flex items-center justify-between w-full">
+                <button
+                  onClick={() => router.push("/")}
+                  className="px-4 py-2 text-sm font-semibold rounded-lg bg-game-blue-dark/50 hover:bg-game-blue-dark text-white transition-colors"
+                >
+                  ← Back to Home
+                </button>
+                <h1 className="text-2xl font-bold text-white">
+                  {isAIGame ? "Playing against AI" : "Multiplayer Game"}
+                </h1>
+              </div>
+
+              {sessionError ? (
+                <div className="text-center text-white">
+                  <h2 className="text-2xl font-bold mb-4">{sessionError}</h2>
+                  <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-game-purple border-t-transparent"></div>
+                </div>
+              ) : !gameState ? (
+                isAIGame ? (
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Starting AI Game...
+                    </h2>
+                    <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-game-purple border-t-transparent"></div>
+                  </div>
+                ) : waitingForResponse ? (
+                  <div className="text-center text-white">
+                    <h2 className="text-2xl font-bold mb-4">
+                      Waiting for Response...
+                    </h2>
+                    <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-game-purple border-t-transparent"></div>
+                  </div>
+                ) : (
+                  <PlayerSelect
+                    participants={participants}
+                    currentUserId={currentUser.id}
+                    onInvitePlayer={handleInvitePlayer}
+                  />
+                )
+              ) : (
+                <GameBoard
+                  gameState={gameState}
+                  currentUserId={currentUser.id}
+                  onMove={handleMove}
+                  onReset={handleReset}
+                />
+              )}
+            </div>
+
+            <div>
+              <ParticipantList
+                participants={participants}
+                gameState={gameState}
+                currentUserId={currentUser.id}
+              />
+            </div>
           </div>
 
-          {sessionError ? (
-            <div className="text-center text-white">
-              <h2 className="text-2xl font-bold mb-4">{sessionError}</h2>
-              <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-game-purple border-t-transparent"></div>
-            </div>
-          ) : !gameState ? (
-            isAIGame ? (
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-4">
-                  Starting AI Game...
-                </h2>
-                <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-game-purple border-t-transparent"></div>
-              </div>
-            ) : waitingForResponse ? (
-              <div className="text-center text-white">
-                <h2 className="text-2xl font-bold mb-4">
-                  Waiting for Response...
-                </h2>
-                <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-game-purple border-t-transparent"></div>
-              </div>
-            ) : (
-              <PlayerSelect
-                participants={participants}
-                currentUserId={currentUser.id}
-                onInvitePlayer={handleInvitePlayer}
-              />
-            )
-          ) : (
-            <GameBoard
-              gameState={gameState}
-              currentUserId={currentUser.id}
-              onMove={handleMove}
-              onReset={handleReset}
+          {gameInvite && (
+            <GameInvite
+              inviter={gameInvite.inviter}
+              onAccept={() => handleInviteResponse(true)}
+              onDecline={() => handleInviteResponse(false)}
             />
           )}
-        </div>
+        </main>
+      </Suspense>
+    </>
+  );
+}
 
-        <div>
-          <ParticipantList
-            participants={participants}
-            gameState={gameState}
-            currentUserId={currentUser.id}
-          />
-        </div>
-      </div>
-
-      {gameInvite && (
-        <GameInvite
-          inviter={gameInvite.inviter}
-          onAccept={() => handleInviteResponse(true)}
-          onDecline={() => handleInviteResponse(false)}
-        />
-      )}
-    </main>
+export default function Game() {
+  return (
+    <Suspense>
+      <GamePage />
+    </Suspense>
   );
 }

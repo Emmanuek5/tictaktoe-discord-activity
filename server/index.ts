@@ -101,7 +101,7 @@ io.on('connection', (socket) => {
     if (!session) return;
 
     // Update session participants while preserving existing participant data
-    const updatedParticipants = participants.map(newParticipant => {
+    const updatedParticipants = participants.map((newParticipant: any) => {
       const existingParticipant = session.participants.find(p => p.id === newParticipant.id);
       return existingParticipant || newParticipant;
     });
