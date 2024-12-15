@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Next.js build output
+.next
+out
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Version control
+.git
+.gitignore
+
+# Docker
+Dockerfile
+Dockerfile.socket
+docker-compose.yml
+.dockerignore
+
+# IDE
+.idea
+.vscode
+
+# System files
+.DS_Store
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Build files
+dist
+build
+
+# Temporary files
+*.swp
+*.swo
+*~

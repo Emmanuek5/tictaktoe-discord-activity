@@ -1,0 +1,19 @@
+FROM oven/bun:1.0.15
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY bun.lockb ./
+
+# Install dependencies with Bun
+RUN bun install
+
+# Copy the rest of the application
+COPY . .
+
+# Expose the port the socket server runs on
+EXPOSE 4000
+
+# Start the socket server directly with Bun
+CMD ["bun", "run", "server/index.ts"]

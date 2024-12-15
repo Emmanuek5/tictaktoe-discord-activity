@@ -2,19 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --game-black: #0F0F0F;
-  --game-blue: #2563EB;
-  --game-purple: #7C3AED;
-  --game-light-blue: #60A5FA;
-  --game-light-purple: #A78BFA;
-  --radius: 0.5rem;
+body {
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-body {
-  background-color: #0F0F0F;
-  color: #FFFFFF;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-grid-white\/5 {
+    background-image: linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  }
 }
+
+
 
 @layer base {
   :root {
@@ -71,7 +74,9 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+}
 
+@layer base {
   * {
     @apply border-border;
   }
@@ -81,32 +86,6 @@ body {
   }
 }
 
-@layer components {
-  .game-button {
-    @apply bg-blue hover:bg-light-blue text-white font-bold py-2 px-4 rounded transition-colors duration-200;
-  }
-  
-  .game-button-secondary {
-    @apply bg-purple hover:bg-light-purple text-white font-bold py-2 px-4 rounded transition-colors duration-200;
-  }
-
-  .game-border {
-    @apply border-2 border-blue rounded-lg;
-  }
-
-  .game-gradient {
-    @apply bg-gradient-to-r from-blue to-purple;
-  }
-
-  .game-box {
-    @apply rounded-xl border p-6;
-  }
-
-  .game-box-blue {
-    @apply game-box border-blue bg-blue/20;
-  }
-
-  .game-box-purple {
-    @apply game-box border-purple bg-purple/20;
-  }
+.glow {
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
 }
