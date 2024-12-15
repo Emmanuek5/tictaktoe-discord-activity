@@ -3,11 +3,11 @@ FROM oven/bun:latest
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 COPY bun.lockb ./
 
 # Install dependencies with Bun
-RUN bun install express socket.io dotenv cors pg redis
+RUN bun install --frozen-lockfile
 
 # Copy application files
 COPY . .
