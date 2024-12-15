@@ -10,10 +10,7 @@ COPY bun.lockb ./
 RUN bun install
 
 # Copy only necessary files for the socket server
-COPY tsconfig.json .
-COPY server ./server
-COPY types ./types
-
+COPY . . 
 # Expose the port the socket server runs on
 EXPOSE 4000
 

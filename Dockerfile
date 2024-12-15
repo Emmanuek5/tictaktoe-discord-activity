@@ -10,18 +10,7 @@ COPY bun.lockb ./
 RUN npm install
 
 # Copy only necessary files for the web app
-COPY tsconfig.json .
-COPY next.config.ts .
-COPY postcss.config.mjs .
-COPY tailwind.config.ts .
-COPY app ./app
-COPY components ./components
-COPY contexts ./contexts
-COPY lib ./lib
-COPY public ./public
-COPY types ./types
-COPY server/types.ts ./server/types.ts
-COPY utils ./utils
+COPY . .
 
 # Build the application
 RUN npm run build
