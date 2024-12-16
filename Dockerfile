@@ -41,6 +41,7 @@ EXPOSE 3000
 # Show the final files
 RUN ls -la
 RUN which bun
+RUN node_modules/next/dist/bin
 
 # Define the command to run the application
 CMD ["bun", "node_modules/next/dist/bin/next", "start"]
