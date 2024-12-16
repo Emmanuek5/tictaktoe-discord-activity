@@ -217,10 +217,10 @@ function GamePage() {
 
   if (!participants || !currentUser) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 p-4">
-        <div className="bg-white/10 p-8 rounded-xl shadow-2xl flex items-center gap-6 animate-pulse">
-          <Loader2 className="h-12 w-12 text-white animate-spin" />
-          <div className="text-white text-2xl font-bold tracking-wide">
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+        <div className="bg-white/5 p-8 rounded-xl shadow-2xl border border-white/10 flex items-center gap-6">
+          <Loader2 className="h-12 w-12 text-white/80 animate-spin" />
+          <div className="text-white/90 text-2xl font-bold tracking-wide">
             Loading game...
           </div>
         </div>
@@ -232,31 +232,31 @@ function GamePage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="h-screen w-full bg-gradient-to-br from-game-blue-dark via-game-purple to-game-blue-light text-white"
+      className="h-screen w-full bg-gradient-to-br from-slate-900 to-slate-800 text-white"
     >
-      <div className=" w-full backdrop-blur-lg bg-black/50">
+      <div className="w-full backdrop-blur-sm bg-black/20">
         {/* Header */}
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="p-4 border-b border-white/10 flex items-center justify-between"
+          className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5"
         >
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-gray-300/80 hover:text-white transition-colors "
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
           >
-            <Button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700">
+            <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700">
               <MoveLeft className="w-5 h-5" />
               <span>Back</span>{" "}
             </Button>
           </motion.button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-white/80">
             {isAIGame ? (
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5" />
-                <span className="text-gray-300">AI Mode</span>
+                <span>AI Mode</span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-white/80">
@@ -275,7 +275,7 @@ function GamePage() {
               animate={{ x: 0, opacity: 1 }}
               className="flex-1"
             >
-              <div className="bg-game-blue-dark/30 rounded-xl p-4 backdrop-blur-md shadow-xl">
+              <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10">
                 {gameState ? (
                   <GameBoard
                     gameState={gameState}
@@ -289,7 +289,7 @@ function GamePage() {
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-red-400 text-center"
+                        className="text-red-400/90 text-center"
                       >
                         {sessionError}
                       </motion.p>
@@ -302,7 +302,7 @@ function GamePage() {
                           ease: "linear",
                         }}
                       >
-                        <Loader2 className="w-8 h-8 text-game-purple" />
+                        <Loader2 className="w-8 h-8 text-white/80" />
                       </motion.div>
                     )}
                   </div>
@@ -316,10 +316,10 @@ function GamePage() {
               animate={{ x: 0, opacity: 1 }}
               className="w-full md:w-80"
             >
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {/* Participants List */}
-                <div className="bg-game-blue-dark/30 rounded-xl p-4 backdrop-blur-md shadow-xl">
-                  <h2 className="text-xl font-semibold mb-4 pb-2 ">Players</h2>
+                <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10">
+                  <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-white/10">Players</h2>
                   {participants && (
                     <ParticipantList
                       participants={participants}
@@ -334,7 +334,7 @@ function GamePage() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-game-blue-dark/30 rounded-xl p-4 backdrop-blur-md shadow-xl"
+                    className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10"
                   >
                     <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-white/10">
                       Available Players
@@ -363,7 +363,7 @@ function GamePage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md"
             >
               <GameInvite
                 inviter={gameInvite.inviter}

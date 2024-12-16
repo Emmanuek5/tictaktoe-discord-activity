@@ -166,7 +166,7 @@ export default function Home() {
       <motion.div
         animate="visible"
         variants={loadingVariants}
-        className="flex items-center justify-center w-screen h-screen bg-gradient-to-br from-game-blue-dark to-zinc-900"
+        className="flex items-center justify-center w-screen h-screen bg-gradient-to-br from-slate-900 to-slate-800"
       >
         <motion.div variants={itemVariants} className="flex items-center gap-4">
           <motion.h1 className="text-2xl font-bold text-white animate-pulse">
@@ -174,7 +174,7 @@ export default function Home() {
           </motion.h1>
           <motion.div
             variants={itemVariants}
-            className="h-8 w-8 animate-spin rounded-full border-4 border-game-purple border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-4 border-slate-500 border-t-transparent"
           ></motion.div>
         </motion.div>
       </motion.div>
@@ -186,9 +186,9 @@ export default function Home() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="text-white overflow-hidden flex flex-col h-screen w-screen bg-gradient-to-br from-game-blue-dark via-game-purple to-game-blue-light"
+      className="text-white overflow-hidden flex flex-col h-screen w-screen bg-gradient-to-br from-slate-900 to-slate-800"
     >
-      <div className="flex flex-col h-full p-4 bg-black bg-opacity-50 backdrop-blur-sm">
+      <div className="flex flex-col h-full p-4 bg-black/30 backdrop-blur-sm">
         <motion.h1
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -207,8 +207,8 @@ export default function Home() {
             className="flex flex-col gap-4 w-1/5 min-w-[200px]"
           >
             {/* User Profile Box */}
-            <div className="bg-game-blue-dark/50 rounded-xl p-4 shadow-lg backdrop-blur-sm">
-              <h2 className="text-xl font-semibold text-white mb-4 border-b border-game-blue-light/30 pb-2">
+            <div className="bg-white/5 rounded-xl p-4 shadow-lg backdrop-blur-sm border border-white/10">
+              <h2 className="text-xl font-semibold text-white mb-4 border-b border-white/30 pb-2">
                 Player Profile
               </h2>
               <div className="space-y-4">
@@ -227,7 +227,7 @@ export default function Home() {
                     width={80}
                     height={80}
                     alt={"User Avatar"}
-                    className="rounded-full border-2 border-game-purple/50"
+                    className="rounded-full border-2 border-white/50"
                   />
                   <div className="mt-2 text-center">
                     <p className="font-semibold">
@@ -236,11 +236,11 @@ export default function Home() {
                   </div>
                 </motion.div>
                 <div className="space-y-2 text-sm">
-                  <p className="flex justify-between items-center bg-game-blue/20 p-2 rounded">
+                  <p className="flex justify-between items-center bg-white/5 p-2 rounded">
                     <span className="opacity-70">Guild</span>
                     <span className="font-medium">{currentGuild?.name}</span>
                   </p>
-                  <p className="flex justify-between items-center bg-game-blue/20 p-2 rounded">
+                  <p className="flex justify-between items-center bg-white/5 p-2 rounded">
                     <span className="opacity-70">Channel</span>
                     <span className="font-medium">{currentChannel?.name}</span>
                   </p>
@@ -254,16 +254,16 @@ export default function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="bg-game-blue-dark/50 rounded-xl p-4 shadow-lg backdrop-blur-sm"
+                className="bg-white/5 rounded-xl p-4 shadow-lg backdrop-blur-sm border border-white/10"
               >
-                <h2 className="text-xl font-semibold text-white mb-4 border-b border-game-blue-light/30 pb-2">
+                <h2 className="text-xl font-semibold text-white mb-4 border-b border-white/30 pb-2">
                   Game Statistics
                 </h2>
 
                 {/* Overall Stats */}
                 <div className="space-y-4">
-                  <div className="bg-game-blue/20 rounded-lg p-3">
-                    <h3 className="text-sm font-medium mb-2 text-game-blue-light ">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <h3 className="text-sm font-medium mb-2 text-white/70">
                       Overall Games
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
@@ -286,8 +286,8 @@ export default function Home() {
                   </div>
 
                   {/* Game Results */}
-                  <div className="bg-game-blue/20 rounded-lg p-3">
-                    <h3 className="text-sm font-medium text-game-blue-light mb-2">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <h3 className="text-sm font-medium text-white/70 mb-2">
                       Game Results
                     </h3>
                     <div className="grid grid-cols-3 gap-2">
@@ -313,8 +313,8 @@ export default function Home() {
                   </div>
 
                   {/* AI Games */}
-                  <div className="bg-game-blue/20 rounded-lg p-3">
-                    <h3 className="text-sm font-medium mb-2 text-game-blue-light">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <h3 className="text-sm font-medium mb-2 text-white/70">
                       AI Games
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
@@ -376,7 +376,7 @@ export default function Home() {
                 <Button
                   disabled={!sdk?.channelId || !auth}
                   onClick={() => router.push("/game?mode=ai")}
-                  className="w-full h-20 bg-gradient-to-r from-game-purple to-game-purple-light hover:from-game-purple-light hover:to-game-purple text-white text-xl font-bold transition-all duration-300 transform hover:scale-105"
+                  className="w-full h-20 bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-bold transition-all duration-300 transform hover:scale-105"
                   variant="default"
                   size="lg"
                   asChild
@@ -407,7 +407,7 @@ export default function Home() {
                 <Button
                   disabled={!sdk?.channelId || !auth}
                   onClick={() => router.push("/game?mode=multiplayer")}
-                  className="w-full h-20 bg-gradient-to-r from-game-blue to-game-blue-light hover:from-game-blue-light hover:to-game-blue text-white text-xl font-bold transition-all duration-300 transform hover:scale-105"
+                  className="w-full h-20 bg-violet-600 hover:bg-violet-700 text-white text-xl font-bold transition-all duration-300 transform hover:scale-105"
                   variant="default"
                   size="lg"
                   asChild
@@ -453,9 +453,9 @@ export default function Home() {
             initial={{ x: 100, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="w-1/5 min-w-[200px] bg-game-blue-dark/50 rounded-xl p-4 shadow-lg backdrop-blur-sm"
+            className="w-1/5 min-w-[200px] bg-white/5 rounded-xl p-4 shadow-lg backdrop-blur-sm border border-white/10"
           >
-            <h2 className="text-xl font-semibold text-white mb-4 border-b border-game-blue-light/30 pb-2">
+            <h2 className="text-xl font-semibold text-white mb-4 border-b border-white/30 pb-2">
               Participants
             </h2>
             <motion.div
@@ -492,7 +492,7 @@ export default function Home() {
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
-                    className="flex items-center space-x-3 bg-game-blue/30 rounded-lg p-2 hover:bg-game-blue-light/30 transition-colors"
+                    className="flex items-center space-x-3 bg-white/5 rounded-lg p-2 hover:bg-white/10 transition-colors"
                   >
                     <Image
                       src={
