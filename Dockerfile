@@ -1,5 +1,4 @@
-# Build stage
-FROM oven/bun AS builder
+FROM oven/bun 
 
 WORKDIR /app
 
@@ -25,23 +24,12 @@ COPY next.config.ts ./
 COPY postcss.config.mjs ./
 COPY tailwind.config.ts ./
 
-# Build the application
-RUN bun run build
 
-# Production image
-FROM oven/bun AS runner
+# Build the web app
+RUN ["bun", "run", "build"]
 
-WORKDIR /app
-
-# Copy necessary files from builder
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/bun.lockb ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-
-# Expose the port the app runs on
+# Expose port 3000
 EXPOSE 3000
 
-# Start the application using the full path to next
-CMD ["bun", "node_modules/.bin/next", "start"]
+# Start the web app
+CMD ["bun", "run", "start"]
