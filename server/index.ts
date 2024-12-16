@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { initDB, updateUserStats } from './db/postgres';
+import { initDB, updateUserStats, getUserStats, logGameCompletion } from './db/postgres';
 import { initRedis, saveGameState, getGameState, deleteGameState } from './db/redis';
 import { createNewGame, makeMove } from './game';
 import { GameMove, JoinGamePayload, GameState } from './types';
@@ -49,6 +49,8 @@ io.on('connection', (socket) => {
   let userChannelId: string | null = null;
 
   socket.on("initializeSession", async ({ channelId, userId, username, isAIGame }) => {
+    userChannelId = channelId;
+
     let session = activeSessions.get(channelId);
 
     // Clear any existing game state when initializing a new session
@@ -67,6 +69,8 @@ io.on('connection', (socket) => {
       session.participants.push({
         id: userId,
         username,
+        avatar: socket.handshake.query.avatar as string,
+        global_name: socket.handshake.query.global_name as string
       });
     }
 
@@ -94,6 +98,16 @@ io.on('connection', (socket) => {
       gameState: session.gameState,
       availableForGame: session.participants.filter(p => p.id !== userId)
     });
+
+    // Get and send user stats
+    try {
+      const stats = await getUserStats(userId);
+      if (stats) {
+        socket.emit('userStats', stats);
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
   });
 
   socket.on('updateParticipants', ({ channelId, participants, isAIGame }) => {
@@ -101,10 +115,12 @@ io.on('connection', (socket) => {
     if (!session) return;
 
     // Update session participants while preserving existing participant data
-    const updatedParticipants = participants.map((newParticipant: any) => {
-      const existingParticipant = session.participants.find(p => p.id === newParticipant.id);
-      return existingParticipant || newParticipant;
-    });
+    const updatedParticipants = participants.map((newParticipant: any) => ({
+      ...newParticipant,
+      ...session.participants.find(p => p.id === newParticipant.id),
+      avatar: newParticipant.avatar,
+      global_name: newParticipant.global_name
+    }));
 
     session.participants = updatedParticipants;
 
@@ -178,38 +194,31 @@ io.on('connection', (socket) => {
       if (newGameState.winner || newGameState.isDraw) {
         const { players, isAIGame } = newGameState;
         
-        if (newGameState.winner) {
-          const winnerId = players[newGameState.winner as keyof typeof players];
-          const loserId = players[newGameState.winner === 'X' ? 'O' : 'X' as keyof typeof players];
-          
-          if (isAIGame) {
-            if (winnerId && winnerId !== 'AI') {
-              await updateUserStats({
-                userId: winnerId,
-                aiGamesPlayed: 1,
-                aiWins: 1,
-                totalGames: 1
-              });
+        try {
+          // Log game completion
+          await logGameCompletion({
+            roomId: move.roomId,
+            playerX: players.X || 'unknown',
+            playerO: players.O || 'unknown',
+            winner: newGameState.winner || undefined,
+            isDraw: newGameState.isDraw,
+            isAIGame,
+            moves: newGameState.board.map((value, index) => ({
+              position: index,
+              player: value
+            })).filter(move => move.player !== null)
+          });
+
+          // Emit updated stats to players
+          const playerIds = [players.X, players.O].filter(id => id && id !== 'AI');
+          for (const playerId of playerIds) {
+            const stats = await getUserStats(playerId!);
+            if (stats) {
+              io.to(move.roomId).emit('userStats', stats);
             }
-          } else {
-            if (winnerId) await updateUserStats({ userId: winnerId, wins: 1, totalGames: 1 });
-            if (loserId) await updateUserStats({ userId: loserId, losses: 1, totalGames: 1 });
           }
-        } else if (newGameState.isDraw) {
-          if (isAIGame) {
-            const humanPlayerId = players.X !== 'AI' ? players.X : players.O;
-            if (humanPlayerId) {
-              await updateUserStats({
-                userId: humanPlayerId,
-                draws: 1,
-                aiGamesPlayed: 1,
-                totalGames: 1
-              });
-            }
-          } else {
-            if (players.X) await updateUserStats({ userId: players.X, draws: 1, totalGames: 1 });
-            if (players.O) await updateUserStats({ userId: players.O, draws: 1, totalGames: 1 });
-          }
+        } catch (error) {
+          console.error('Error handling game completion:', error);
         }
 
         // Clean up game state after delay
@@ -264,6 +273,18 @@ io.on('connection', (socket) => {
           availableForGame: session.participants
         });
       }
+    }
+  });
+
+  // Handle stats request
+  socket.on('requestStats', async ({ userId }) => {
+    try {
+      const stats = await getUserStats(userId);
+      if (stats) {
+        socket.emit('userStats', stats);
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
     }
   });
 });

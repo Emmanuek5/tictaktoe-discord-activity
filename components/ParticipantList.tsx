@@ -14,20 +14,22 @@ export function ParticipantList({
   gameState,
   currentUserId,
 }: ParticipantListProps) {
+  console.log("PARTICIPANTS", JSON.stringify(participants, null, 2));
+
   const getParticipantStatus = (participant: DiscordParticipant) => {
     if (!gameState) return null;
 
-    if (participant.id === 'AI') {
-      return gameState.players.O === 'AI' ? 'O' : null;
+    if (participant.id === "AI") {
+      return gameState.players.O === "AI" ? "O" : null;
     }
 
-    if (gameState.players.X === participant.id) return 'X';
-    if (gameState.players.O === participant.id) return 'O';
+    if (gameState.players.X === participant.id) return "X";
+    if (gameState.players.O === participant.id) return "O";
     return null;
   };
 
   const getParticipantAvatar = (participant: DiscordParticipant) => {
-    if (participant.id === 'AI') {
+    if (participant.id === "AI") {
       return "https://cdn.discordapp.com/embed/avatars/0.png"; // Default Discord bot avatar
     }
     if (!participant.avatar) {
@@ -77,7 +79,7 @@ export function ParticipantList({
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-white truncate">
                   {participant.global_name || participant.username}
-                  {participant.id === 'AI' && ' 🤖'}
+                  {participant.id === "AI" && " 🤖"}
                 </div>
                 {participant.id === currentUserId && (
                   <div className="text-xs text-white/60">You</div>
