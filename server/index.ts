@@ -20,7 +20,9 @@ const io = new Server(httpServer, {
     ],
     methods: ['GET', 'POST'],
     credentials: true
-  }
+  },
+  path: '/socket',
+  transports: ['websocket']
 });
 
 const PORT = process.env.SOCKET_PORT || 4000;

@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${robotoFlex.className} antialiased bg-gray-900  tracking-tight`}
+        className={`${robotoFlex.className} antialiased bg-gradient-to-br from-slate-900 to-slate-800 tracking-tight`}
       >
         <DiscordProvider clientId={process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID!}>
           {children}
