@@ -1,5 +1,5 @@
-# Use Bun as the base image
-FROM oven/bun
+# Build stage
+FROM oven/bun AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -14,16 +14,31 @@ RUN bun install
 # Copy the rest of the application code to the working directory
 COPY . .
 
-# Copy .env file to the container
-COPY .env .env
-
 # Build the Next.js application
 RUN bun run build
+
+# Show the build output
+RUN ls -la
+RUN ls -la .next
+
+# Runner stage
+FROM oven/bun AS runner
+
+WORKDIR /app
+
+# Copy only the necessary files from builder
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/bun.lockb ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.env ./.env
 
 # Expose the port the app runs on
 EXPOSE 3000
 
-RUN ls
+# Show the final files
+RUN ls -la
 
 # Define the command to run the application
 CMD ["bun", "run", "start"]
