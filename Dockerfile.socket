@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-slim AS builder
+FROM oven/bun AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -9,13 +9,8 @@ COPY package*.json ./
 COPY bun.lockb ./
 COPY tsconfig.json ./
 
-# Install dependencies with npm
-RUN ls
-
-RUN npm install
-
-# Install bun for building
-RUN curl -fsSL https://bun.sh/install | bash
+# Install dependencies with Bun
+RUN bun install
 
 # Copy application source files
 COPY . .

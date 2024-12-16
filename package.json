@@ -30,7 +30,6 @@
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "tictakto-discord-activity": "file:",
     "tsx": "^4.7.0"
   },
   "devDependencies": {
