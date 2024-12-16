@@ -80,7 +80,7 @@ export default function Home() {
   useEffect(() => {
     if (!currentUser || !sdk?.channelId) return;
 
-    const newSocket = io();
+    const newSocket = io("./proxy/socket.io");
     setSocket(newSocket);
 
     newSocket.on("connect", () => {

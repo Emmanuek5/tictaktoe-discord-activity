@@ -97,7 +97,7 @@ function GamePage() {
       return;
     }
 
-    const newSocket = io();
+    const newSocket = io("/.proxy/socket.io");
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
