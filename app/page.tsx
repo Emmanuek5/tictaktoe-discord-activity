@@ -94,7 +94,7 @@ export default function Home() {
   useEffect(() => {
     if (!currentUser || !sdk?.channelId) return;
 
-    const newSocket = io("./proxy/socket.io");
+    const newSocket = io("/socket.io");
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
