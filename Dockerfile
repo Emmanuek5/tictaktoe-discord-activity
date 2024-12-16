@@ -24,12 +24,13 @@ COPY next.config.ts ./
 COPY postcss.config.mjs ./
 COPY tailwind.config.ts ./
 
-
 # Build the web app
-RUN ["bun", "run", "build"]
+RUN bun run build
 
 # Expose port 3000
 EXPOSE 3000
 
-# Start the web app
-RUN ["bun", "run", "start"]
+RUN ls
+
+# Start the web app when container starts
+CMD bun run start
