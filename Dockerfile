@@ -22,7 +22,7 @@ RUN ls -la
 RUN ls -la .next
 
 # Runner stage
-FROM oven/bun AS runner
+FROM node:18-slim  AS runner
 
 WORKDIR /app
 
@@ -43,4 +43,4 @@ RUN ls -la
 
 
 # Define the command to run the application
-CMD ["bun", "run", "start"]
+CMD ["npm", "run", "start"]
