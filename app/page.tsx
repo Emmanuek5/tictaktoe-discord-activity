@@ -10,6 +10,7 @@ import { io } from "socket.io-client";
 import { GameInvite } from "@/components/GameInvite";
 import { UserStats } from "@/components/UserStats";
 import { motion, AnimatePresence } from "framer-motion";
+import { patchUrlMappings } from "@discord/embedded-app-sdk";
 
 export default function Home() {
   const router = useRouter();
@@ -45,6 +46,19 @@ export default function Home() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const patchUrls = async () => {
+      await patchUrlMappings([
+        {
+          prefix: "/socket.io",
+          target: "https://socket-io.devit.lol/",
+        },
+      ]);
+    };
+
+    patchUrls();
   }, []);
 
   // Handle Discord participants
