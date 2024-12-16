@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "bun run next start",
     "lint": "next lint",
     "server": "tsx watch server/index.ts"
   },
