@@ -388,7 +388,7 @@ export default function Home() {
                 <Button
                   disabled={!sdk?.channelId || !auth}
                   onClick={() => router.push("/game?mode=ai")}
-                  className="w-full h-20 bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-bold transition-all duration-300 transform hover:scale-105"
+                  className="w-full h-20 bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-bold transition-all duration-300 transform hover:scale-105 py-4"
                   variant="default"
                   size="lg"
                   asChild
@@ -419,7 +419,7 @@ export default function Home() {
                 <Button
                   disabled={!sdk?.channelId || !auth}
                   onClick={() => router.push("/game?mode=multiplayer")}
-                  className="w-full h-20 bg-violet-600 hover:bg-violet-700 text-white text-xl font-bold transition-all duration-300 transform hover:scale-105"
+                  className="w-full h-20 bg-violet-600 hover:bg-violet-700 text-white text-xl font-bold transition-all duration-300 transform hover:scale-105 py-4 "
                   variant="default"
                   size="lg"
                   asChild
