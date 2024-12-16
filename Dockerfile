@@ -32,4 +32,4 @@ RUN ["bun", "run", "build"]
 EXPOSE 3000
 
 # Start the web app
-CMD ["bun", "run", "start"]
+RUN ["bun", "run", "start"]
