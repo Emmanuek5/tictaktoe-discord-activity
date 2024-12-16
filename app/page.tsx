@@ -48,19 +48,6 @@ export default function Home() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  useEffect(() => {
-    const patchUrls = async () => {
-      await patchUrlMappings([
-        {
-          prefix: "/socket.io",
-          target: "https://socket-io.devit.lol/",
-        },
-      ]);
-    };
-
-    patchUrls();
-  }, []);
-
   // Handle Discord participants
   useEffect(() => {
     const getParticipants = async () => {
