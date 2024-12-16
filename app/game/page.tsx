@@ -97,9 +97,7 @@ function GamePage() {
       return;
     }
 
-    const newSocket = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
-    );
+    const newSocket = io();
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
@@ -319,7 +317,9 @@ function GamePage() {
               <div className="space-y-4">
                 {/* Participants List */}
                 <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10">
-                  <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-white/10">Players</h2>
+                  <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-white/10">
+                    Players
+                  </h2>
                   {participants && (
                     <ParticipantList
                       participants={participants}

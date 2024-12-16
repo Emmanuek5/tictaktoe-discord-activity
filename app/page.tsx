@@ -80,9 +80,7 @@ export default function Home() {
   useEffect(() => {
     if (!currentUser || !sdk?.channelId) return;
 
-    const newSocket = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:4000"
-    );
+    const newSocket = io();
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
