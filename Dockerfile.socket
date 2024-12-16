@@ -5,7 +5,7 @@ FROM oven/bun AS builder
 WORKDIR /app
 
 # Copy package manager files first (optimize caching)
-COPY package*.json ./
+COPY package.json ./
 COPY bun.lockb ./
 COPY tsconfig.json ./
 
