@@ -97,7 +97,9 @@ function GamePage() {
       return;
     }
 
-    const newSocket = io("/socket");
+    const newSocket = io("/socket", {
+      path: "/socket",
+    });
     setSocket(newSocket);
 
     newSocket.on("connect", () => {
