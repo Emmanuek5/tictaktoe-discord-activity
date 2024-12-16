@@ -84,7 +84,6 @@ export default function Home() {
     const newSocket = io("/socket", {
       path: "/socket",
       timeout: 50000,
-      transports: ["websocket", "polling"],
     });
     setSocket(newSocket);
 
