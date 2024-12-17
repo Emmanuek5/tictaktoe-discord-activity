@@ -18,6 +18,7 @@ const eslintConfig = [
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
       "prefer-const": "off",
+      "@next/next/no-img-element": "off",
     },
   },
 ];

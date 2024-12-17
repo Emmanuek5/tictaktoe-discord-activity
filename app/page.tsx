@@ -11,6 +11,7 @@ import { GameInvite } from "@/components/GameInvite";
 import { UserStats } from "@/components/UserStats";
 import { motion, AnimatePresence } from "framer-motion";
 import { patchUrlMappings } from "@discord/embedded-app-sdk";
+import Loader from "@/components/Loader";
 
 export default function Home() {
   const router = useRouter();
@@ -163,23 +164,7 @@ export default function Home() {
   };
 
   if (isLoading) {
-    return (
-      <motion.div
-        animate="visible"
-        variants={loadingVariants}
-        className="flex items-center justify-center w-screen h-screen bg-gradient-to-br from-slate-900 to-slate-800"
-      >
-        <motion.div variants={itemVariants} className="flex items-center gap-4">
-          <motion.h1 className="text-2xl font-bold text-white animate-pulse">
-            Loading
-          </motion.h1>
-          <motion.div
-            variants={itemVariants}
-            className="h-8 w-8 animate-spin rounded-full border-4 border-slate-500 border-t-transparent"
-          ></motion.div>
-        </motion.div>
-      </motion.div>
-    );
+    return <Loader />;
   }
 
   return (
