@@ -84,7 +84,7 @@ export default function Home() {
     const connectSocket = async () => {
       const newSocket = io("/socket", {
         path: "/socket",
-        transports: ["websocket"],
+        transports: ["polling", "websocket"],
         timeout: 5000,
       });
       setSocket(newSocket);
