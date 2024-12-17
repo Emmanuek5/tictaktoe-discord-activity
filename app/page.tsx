@@ -116,17 +116,7 @@ export default function Home() {
       }
     };
 
-    if (sdk) {
-      connectSocket();
-    }
-
-    return () => {
-      if (socket) {
-        socket.disconnect();
-      }
-      setSocket(null);
-      setGameInvite(null);
-    };
+    connectSocket();
   }, [currentUser, sdk?.channelId]);
 
   const handleInviteResponse = (accepted: boolean) => {
