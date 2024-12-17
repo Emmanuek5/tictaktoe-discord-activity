@@ -81,41 +81,49 @@ export default function Home() {
   useEffect(() => {
     if (!currentUser || !sdk?.channelId) return;
 
-    const newSocket = io("/socket", {
-      path: "/socket",
-      transports: ["websocket"],
-      timeout: 5000,
-    });
-    setSocket(newSocket);
-
-    newSocket.on("connect", () => {
-      console.log("Connected to socket server");
-      newSocket.emit("initializeSession", {
-        channelId: sdk.channelId,
-        userId: currentUser.id,
-        username: currentUser.username,
-        isAIGame: false,
+    const connectSocket = async () => {
+      const newSocket = io("/socket", {
+        path: "/socket",
+        transports: ["websocket"],
+        timeout: 5000,
       });
-    });
+      setSocket(newSocket);
 
-    newSocket.on("gameInvite", ({ inviter, inviteId }) => {
-      setGameInvite({ inviter, inviteId });
-    });
+      newSocket.on("connect", () => {
+        console.log("Connected to socket server");
+        newSocket.emit("initializeSession", {
+          channelId: sdk.channelId,
+          userId: currentUser.id,
+          username: currentUser.username,
+          isAIGame: false,
+        });
+      });
 
-    // Listen for user stats updates
-    newSocket.on("userStats", (stats) => {
-      console.log("stats", stats);
+      newSocket.on("gameInvite", ({ inviter, inviteId }) => {
+        setGameInvite({ inviter, inviteId });
+      });
 
-      setUserStats(stats);
-    });
+      // Listen for user stats updates
+      newSocket.on("userStats", (stats) => {
+        console.log("stats", stats);
 
-    // Request initial stats
-    if (currentUser?.id) {
-      newSocket.emit("requestStats", { userId: currentUser.id });
+        setUserStats(stats);
+      });
+
+      // Request initial stats
+      if (currentUser?.id) {
+        newSocket.emit("requestStats", { userId: currentUser.id });
+      }
+    };
+
+    if (sdk) {
+      connectSocket();
     }
 
     return () => {
-      newSocket.close();
+      if (socket) {
+        socket.disconnect();
+      }
       setSocket(null);
       setGameInvite(null);
     };
@@ -264,7 +272,7 @@ export default function Home() {
                 </h2>
 
                 {/* Overall Stats */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="bg-white/5 rounded-lg p-3">
                     <h3 className="text-sm font-medium mb-2 text-white/70">
                       Overall Games
