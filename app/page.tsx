@@ -82,8 +82,8 @@ export default function Home() {
     if (!currentUser || !sdk?.channelId) return;
 
     const connectSocket = async () => {
-      const newSocket = io("./proxy/socket", {
-        path: "/.proxy/socket",
+      const newSocket = io("/socket", {
+        path: "/socket",
         transports: ["polling", "websocket"],
         timeout: 5000,
       });
