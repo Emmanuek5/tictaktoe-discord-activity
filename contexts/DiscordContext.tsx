@@ -96,7 +96,19 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
     }
     return null;
   });
-  const [sdk, setSdk] = useState<DiscordSDK | null>(null);
+  const [sdk, setSdk] = useState<DiscordSDK | null>(() => {
+    if (typeof window !== "undefined") {
+      const savedSdkState = localStorage.getItem("discord_sdk_state");
+      if (savedSdkState) {
+        const { isInitialized } = JSON.parse(savedSdkState);
+        if (isInitialized) {
+          const sdkInstance = new DiscordSDK(clientId);
+          return sdkInstance;
+        }
+      }
+    }
+    return null;
+  });
 
   // Store auth data in localStorage when it changes
   useEffect(() => {
@@ -106,6 +118,18 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
       localStorage.removeItem("discord_auth");
     }
   }, [auth]);
+
+  // Store SDK state in localStorage
+  useEffect(() => {
+    if (sdk) {
+      localStorage.setItem(
+        "discord_sdk_state",
+        JSON.stringify({ isInitialized: true })
+      );
+    } else {
+      localStorage.removeItem("discord_sdk_state");
+    }
+  }, [sdk]);
 
   // Store guild data in localStorage when it changes
   useEffect(() => {
@@ -134,16 +158,53 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
     }
   }, [currentUser]);
 
-  // Initialize SDK
+  // Initialize SDK only if not already initialized
   useEffect(() => {
     const initializeSdk = async () => {
+      // Check if SDK is already initialized
+      const savedSdkState = localStorage.getItem("discord_sdk_state");
+      if (savedSdkState) {
+        const { isInitialized } = JSON.parse(savedSdkState);
+        if (isInitialized && sdk) {
+          try {
+            // Just ensure the SDK is ready
+            await sdk.ready();
+            Logger.info("Discord SDK already initialized");
+
+            // If we have stored auth, try to authenticate immediately
+            const storedAuth = localStorage.getItem("discord_auth");
+            if (storedAuth) {
+              const { access_token } = JSON.parse(storedAuth);
+              const authResult = await sdk.commands.authenticate({
+                access_token,
+              });
+              if (!authResult) {
+                // If stored auth is invalid, clear it
+                localStorage.removeItem("discord_auth");
+                setAuth(null);
+              }
+            }
+            return;
+          } catch (err) {
+            // If there's an error with the stored SDK, clear it and reinitialize
+            localStorage.removeItem("discord_sdk_state");
+            setSdk(null);
+          }
+        }
+      }
+
+      // Initialize new SDK if needed
       try {
         const sdkInstance = new DiscordSDK(clientId);
         await sdkInstance.ready();
         Logger.info("Discord SDK initialized");
         setSdk(sdkInstance);
+        localStorage.setItem(
+          "discord_sdk_state",
+          JSON.stringify({ isInitialized: true })
+        );
 
-        // If we have stored auth, try to authenticate immediately
+        // Handle authentication after new initialization
         const storedAuth = localStorage.getItem("discord_auth");
         if (storedAuth) {
           const { access_token } = JSON.parse(storedAuth);
@@ -151,7 +212,6 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
             access_token,
           });
           if (!authResult) {
-            // If stored auth is invalid, clear it
             localStorage.removeItem("discord_auth");
             setAuth(null);
           }
@@ -164,8 +224,10 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
       }
     };
 
-    initializeSdk();
-  }, [clientId]);
+    if (!sdk) {
+      initializeSdk();
+    }
+  }, [clientId, sdk]);
 
   // Handle Authentication
   useEffect(() => {
