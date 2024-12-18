@@ -90,7 +90,7 @@ export default function Home() {
       });
 
       setSocket(newSocket);
-      console.log("newSocket", JSON.stringify(newSocket));
+
       newSocket.onAny((eventName, ...args) => {
         console.log(eventName, args);
       });
