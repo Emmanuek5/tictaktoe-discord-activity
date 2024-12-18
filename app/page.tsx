@@ -84,7 +84,7 @@ export default function Home() {
 
     const connectSocket = async () => {
       const newSocket = io("", {
-        path: "/./proxy/socket",
+        path: "/.proxy/socket",
         transports: ["polling", "websocket"],
         timeout: 5000,
         extraHeaders: {
