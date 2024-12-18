@@ -83,8 +83,8 @@ export default function Home() {
     if (!currentUser || !sdk?.channelId) return;
 
     const connectSocket = async () => {
-      const newSocket = io("/./proxy/https://socket.devit.lol/socket.io", {
-        // path: "socket",
+      const newSocket = io("", {
+        path: "/./proxy/socket",
         transports: ["polling", "websocket"],
         timeout: 5000,
         extraHeaders: {
