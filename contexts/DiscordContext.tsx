@@ -1,5 +1,11 @@
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { DiscordSDK } from "@discord/embedded-app-sdk";
 import Logger from "@/utils/logger";
 
@@ -41,6 +47,7 @@ interface DiscordContextType {
   currentChannel: Channel | null;
   sdk: DiscordSDK | null;
   currentUser: DiscordUser | null;
+  clearStoredData: () => Promise<void>;
 }
 
 const DiscordContext = createContext<DiscordContextType | null>(null);
@@ -61,11 +68,71 @@ interface DiscordProviderProps {
 export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [auth, setAuth] = useState<{ access_token: string } | null>(null);
-  const [currentGuild, setCurrentGuild] = useState<Guild | null>(null);
-  const [currentChannel, setCurrentChannel] = useState<Channel | null>(null);
+  const [auth, setAuth] = useState<{ access_token: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      const savedAuth = localStorage.getItem("discord_auth");
+      return savedAuth ? JSON.parse(savedAuth) : null;
+    }
+    return null;
+  });
+  const [currentGuild, setCurrentGuild] = useState<Guild | null>(() => {
+    if (typeof window !== "undefined") {
+      const savedGuild = localStorage.getItem("discord_guild");
+      return savedGuild ? JSON.parse(savedGuild) : null;
+    }
+    return null;
+  });
+  const [currentChannel, setCurrentChannel] = useState<Channel | null>(() => {
+    if (typeof window !== "undefined") {
+      const savedChannel = localStorage.getItem("discord_channel");
+      return savedChannel ? JSON.parse(savedChannel) : null;
+    }
+    return null;
+  });
+  const [currentUser, setCurrentUser] = useState<DiscordUser | null>(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("discord_user");
+      return savedUser ? JSON.parse(savedUser) : null;
+    }
+    return null;
+  });
   const [sdk, setSdk] = useState<DiscordSDK | null>(null);
-  const [currentUser, setCurrentUser] = useState<DiscordUser | null>(null);
+
+  // Store auth data in localStorage when it changes
+  useEffect(() => {
+    if (auth) {
+      localStorage.setItem("discord_auth", JSON.stringify(auth));
+    } else {
+      localStorage.removeItem("discord_auth");
+    }
+  }, [auth]);
+
+  // Store guild data in localStorage when it changes
+  useEffect(() => {
+    if (currentGuild) {
+      localStorage.setItem("discord_guild", JSON.stringify(currentGuild));
+    } else {
+      localStorage.removeItem("discord_guild");
+    }
+  }, [currentGuild]);
+
+  // Store channel data in localStorage when it changes
+  useEffect(() => {
+    if (currentChannel) {
+      localStorage.setItem("discord_channel", JSON.stringify(currentChannel));
+    } else {
+      localStorage.removeItem("discord_channel");
+    }
+  }, [currentChannel]);
+
+  // Store user data in localStorage when it changes
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem("discord_user", JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem("discord_user");
+    }
+  }, [currentUser]);
 
   // Initialize SDK
   useEffect(() => {
@@ -75,6 +142,20 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
         await sdkInstance.ready();
         Logger.info("Discord SDK initialized");
         setSdk(sdkInstance);
+
+        // If we have stored auth, try to authenticate immediately
+        const storedAuth = localStorage.getItem("discord_auth");
+        if (storedAuth) {
+          const { access_token } = JSON.parse(storedAuth);
+          const authResult = await sdkInstance.commands.authenticate({
+            access_token,
+          });
+          if (!authResult) {
+            // If stored auth is invalid, clear it
+            localStorage.removeItem("discord_auth");
+            setAuth(null);
+          }
+        }
       } catch (err) {
         const error =
           err instanceof Error ? err : new Error("Failed to initialize SDK");
@@ -92,31 +173,34 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
       if (!sdk) return;
 
       try {
-        Logger.debug("Starting authentication process");
-        const { code } = await sdk.commands.authorize({
-          client_id: clientId,
-          response_type: "code",
-          state: "",
-          prompt: "none",
-          scope: ["identify", "guilds", "applications.commands"],
-        });
+        // Only authenticate if we don't have stored auth
+        if (!auth) {
+          Logger.debug("Starting authentication process");
+          const { code } = await sdk.commands.authorize({
+            client_id: clientId,
+            response_type: "code",
+            state: "",
+            prompt: "none",
+            scope: ["identify", "guilds", "applications.commands"],
+          });
 
-        Logger.debug("Exchanging code for token");
-        const response = await fetch("/.proxy/api/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-        });
+          Logger.debug("Exchanging code for token");
+          const response = await fetch("/.proxy/api/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          });
 
-        const { access_token } = await response.json();
-        const authResult = await sdk.commands.authenticate({ access_token });
+          const { access_token } = await response.json();
+          const authResult = await sdk.commands.authenticate({ access_token });
 
-        if (!authResult) {
-          throw new Error("Authentication failed");
+          if (!authResult) {
+            throw new Error("Authentication failed");
+          }
+
+          Logger.info("Authentication successful");
+          setAuth(authResult);
         }
-
-        Logger.info("Authentication successful");
-        setAuth(authResult);
       } catch (err) {
         const error =
           err instanceof Error ? err : new Error("Authentication failed");
@@ -228,6 +312,17 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
     setIsLoading(!sdk || !auth);
   }, [sdk, auth]);
 
+  const clearStoredData = useCallback(async () => {
+    localStorage.removeItem("discord_auth");
+    localStorage.removeItem("discord_guild");
+    localStorage.removeItem("discord_channel");
+    localStorage.removeItem("discord_user");
+    setAuth(null);
+    setCurrentGuild(null);
+    setCurrentChannel(null);
+    setCurrentUser(null);
+  }, []);
+
   const value = {
     isLoading,
     error,
@@ -236,6 +331,7 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
     currentChannel,
     sdk,
     currentUser,
+    clearStoredData,
   };
 
   return (
