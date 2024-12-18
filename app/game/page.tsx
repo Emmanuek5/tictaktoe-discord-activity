@@ -92,18 +92,13 @@ function GamePage() {
   }, [sdk, socket, currentUser, isAIGame]);
 
   useEffect(() => {
-    if (!currentUser) {
-      router.push("/");
-      return;
-    }
-
     const newSocket = io("", {
       path: "/.proxy/socket",
       transports: ["polling"],
       query: {
         channelId: sdk?.channelId,
-        userId: currentUser.id,
-        username: currentUser.username,
+        userId: currentUser?.id,
+        username: currentUser?.username,
       },
       timeout: 5000,
     });
@@ -118,8 +113,8 @@ function GamePage() {
       console.log("Connected to socket server");
       newSocket.emit("initializeSession", {
         channelId: sdk?.channelId,
-        userId: currentUser.id,
-        username: currentUser.username,
+        userId: currentUser?.id,
+        username: currentUser?.username,
         isAIGame,
       });
     });
