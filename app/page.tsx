@@ -85,7 +85,12 @@ export default function Home() {
     const connectSocket = async () => {
       const newSocket = io("", {
         path: "/.proxy/socket",
-        transports: ["polling", "websocket"],
+        transports: ["polling"],
+        query: {
+          channelId: sdk.channelId,
+          userId: currentUser.id,
+          username: currentUser.username,
+        },
         timeout: 5000,
       });
 
