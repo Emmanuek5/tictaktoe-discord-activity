@@ -97,8 +97,8 @@ function GamePage() {
       return;
     }
 
-    const newSocket = io("/socket", {
-      path: "/socket",
+    const newSocket = io("", {
+      path: "/.proxy/socket",
       transports: ["polling", "websocket"],
       timeout: 10000,
     });
