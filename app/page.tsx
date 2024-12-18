@@ -87,9 +87,6 @@ export default function Home() {
         path: "/.proxy/socket",
         transports: ["polling", "websocket"],
         timeout: 5000,
-        extraHeaders: {
-          Origin: "https://980117022765613056.discordsays.com",
-        },
       });
       setSocket(newSocket);
       console.log("newSocket", newSocket);
