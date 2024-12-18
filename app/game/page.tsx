@@ -92,13 +92,17 @@ function GamePage() {
   }, [sdk, socket, currentUser, isAIGame]);
 
   useEffect(() => {
+    if (!currentUser?.id || !sdk?.channelId) {
+      return;
+    }
+
     const newSocket = io("", {
       path: "/.proxy/socket",
       transports: ["polling"],
       query: {
-        channelId: sdk?.channelId,
-        userId: currentUser?.id,
-        username: currentUser?.username,
+        channelId: sdk.channelId,
+        userId: currentUser.id,
+        username: currentUser.username,
       },
       timeout: 5000,
     });
@@ -112,9 +116,9 @@ function GamePage() {
     newSocket.on("connect", () => {
       console.log("Connected to socket server");
       newSocket.emit("initializeSession", {
-        channelId: sdk?.channelId,
-        userId: currentUser?.id,
-        username: currentUser?.username,
+        channelId: sdk.channelId,
+        userId: currentUser.id,
+        username: currentUser.username,
         isAIGame,
       });
     });
@@ -160,14 +164,17 @@ function GamePage() {
     });
 
     return () => {
-      newSocket.close();
+      if (newSocket) {
+        console.log('Disconnecting socket...');
+        newSocket.disconnect();
+      }
       setGameState(null);
       setParticipants(null);
       setGameInvite(null);
       setWaitingForResponse(false);
       setSessionError(null);
     };
-  }, [currentUser, sdk?.channelId, isAIGame, router]);
+  }, [currentUser?.id, sdk?.channelId, isAIGame]);
 
   const handleMove = useCallback(
     (position: number) => {
