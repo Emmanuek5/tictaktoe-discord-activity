@@ -92,6 +92,7 @@ export default function Home() {
         },
       });
       setSocket(newSocket);
+      console.log("newSocket", newSocket);
 
       newSocket.on("connect", () => {
         console.log("Connected to socket server");
