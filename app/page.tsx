@@ -88,9 +88,12 @@ export default function Home() {
         transports: ["polling", "websocket"],
         timeout: 5000,
       });
-      setSocket(newSocket);
-      console.log("newSocket", newSocket);
 
+      setSocket(newSocket);
+      console.log("newSocket", JSON.stringify(newSocket));
+      newSocket.onAny((eventName, ...args) => {
+        console.log(eventName, args);
+      });
       newSocket.on("connect", () => {
         console.log("Connected to socket server");
         newSocket.emit("initializeSession", {

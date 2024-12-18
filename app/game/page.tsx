@@ -104,6 +104,11 @@ function GamePage() {
     });
     setSocket(newSocket);
 
+    //lets log all events
+    newSocket.onAny((eventName, ...args) => {
+      console.log(eventName, args);
+    });
+
     newSocket.on("connect", () => {
       console.log("Connected to socket server");
       newSocket.emit("initializeSession", {
