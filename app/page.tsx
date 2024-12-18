@@ -84,9 +84,12 @@ export default function Home() {
 
     const connectSocket = async () => {
       const newSocket = io("/socket", {
-        path: "/socket",
+        path: "./proxy/socket",
         transports: ["polling", "websocket"],
         timeout: 5000,
+        extraHeaders: {
+          Origin: "https://980117022765613056.discordsays.com",
+        },
       });
       setSocket(newSocket);
 
