@@ -1,17 +1,18 @@
 "use client";
 
 import { useDiscordContext } from "@/contexts/DiscordContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ParticipantsResponse } from "@/types/discord";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { io } from "socket.io-client";
 import { GameInvite } from "@/components/GameInvite";
 import { UserStats } from "@/components/UserStats";
 import { motion, AnimatePresence } from "framer-motion";
 import { patchUrlMappings } from "@discord/embedded-app-sdk";
 import Loader from "@/components/Loader";
+
+const POLL_INTERVAL = 1000; // Poll every second
 
 export default function Home() {
   const router = useRouter();
@@ -26,15 +27,10 @@ export default function Home() {
   } = useDiscordContext();
 
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
-  const [participants, setParticipants] = useState<ParticipantsResponse | null>(
-    null
-  );
-  const [socket, setSocket] = useState<any>(null);
-  const [gameInvite, setGameInvite] = useState<{
-    inviter: any;
-    inviteId: string;
-  } | null>(null);
+  const [participants, setParticipants] = useState<ParticipantsResponse | null>(null);
+  const [gameInvite, setGameInvite] = useState<{ inviter: any; inviteId: string; } | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
+  const [lastUpdate, setLastUpdate] = useState<number>(0);
 
   // Handle window resize
   useEffect(() => {
@@ -54,8 +50,7 @@ export default function Home() {
     const getParticipants = async () => {
       if (!sdk?.channelId || !auth) return;
 
-      const participants =
-        await sdk.commands.getInstanceConnectedParticipants();
+      const participants = await sdk.commands.getInstanceConnectedParticipants();
       sdk?.subscribe(
         "ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE",
         handleParticipantUpdate
@@ -78,73 +73,95 @@ export default function Home() {
     };
   }, [sdk, auth]);
 
-  // Handle socket connection
-  useEffect(() => {
+  // Initialize session
+  const initializeSession = useCallback(async () => {
     if (!currentUser || !sdk?.channelId) return;
 
-    const connectSocket = async () => {
-      const newSocket = io("", {
-        path: "/.proxy/socket",
-        transports: ["polling"],
-        query: {
-          channelId: sdk.channelId,
-          userId: currentUser.id,
-          username: currentUser.username,
-        },
-        timeout: 5000,
-      });
-
-      setSocket(newSocket);
-
-      newSocket.onAny((eventName, ...args) => {
-        console.log(eventName, args);
-      });
-      newSocket.on("connect", () => {
-        console.log("Connected to socket server");
-        newSocket.emit("initializeSession", {
+    try {
+      const response = await fetch('/api/session/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           channelId: sdk.channelId,
           userId: currentUser.id,
           username: currentUser.username,
           isAIGame: false,
-        });
+          avatar: currentUser.avatar,
+          global_name: currentUser.global_name
+        })
       });
 
-      newSocket.on("gameInvite", ({ inviter, inviteId }) => {
-        setGameInvite({ inviter, inviteId });
-      });
+      if (!response.ok) throw new Error('Failed to initialize session');
 
-      // Listen for user stats updates
-      newSocket.on("userStats", (stats) => {
-        console.log("stats", stats);
-
-        setUserStats(stats);
-      });
-
-      // Request initial stats
-      if (currentUser?.id) {
-        newSocket.emit("requestStats", { userId: currentUser.id });
-      }
-    };
-
-    connectSocket();
+      const data = await response.json();
+      setParticipants(data.sessionState);
+      setUserStats(data.userStats);
+    } catch (error) {
+      console.error('Failed to initialize session:', error);
+    }
   }, [currentUser, sdk?.channelId]);
 
-  const handleInviteResponse = (accepted: boolean) => {
-    if (!socket || !gameInvite || !currentUser || !sdk?.channelId) return;
+  // Poll for updates
+  useEffect(() => {
+    if (!currentUser || !sdk?.channelId) return;
 
-    socket.emit("respondToInvite", {
-      inviteId: gameInvite.inviteId,
-      accepted,
-      inviterId: gameInvite.inviter.id,
-      inviteeId: currentUser.id,
-      channelId: sdk.channelId,
-    });
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/session/poll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channelId: sdk.channelId,
+            lastUpdate
+          })
+        });
 
-    if (accepted) {
-      router.push("/game?mode=multiplayer");
+        if (response.status === 304) return; // No changes
+
+        if (!response.ok) throw new Error('Failed to poll for updates');
+
+        const data = await response.json();
+        setParticipants(data);
+        setLastUpdate(data.lastUpdate);
+      } catch (error) {
+        console.error('Failed to poll for updates:', error);
+      }
+    }, POLL_INTERVAL);
+
+    return () => clearInterval(pollInterval);
+  }, [currentUser, sdk?.channelId, lastUpdate]);
+
+  // Initialize session on mount
+  useEffect(() => {
+    initializeSession();
+  }, [initializeSession]);
+
+  const handleInviteResponse = async (accepted: boolean) => {
+    if (!gameInvite || !currentUser || !sdk?.channelId) return;
+
+    try {
+      const response = await fetch('/api/game/invite/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inviteId: gameInvite.inviteId,
+          accepted,
+          inviterId: gameInvite.inviter.id,
+          inviteeId: currentUser.id,
+          channelId: sdk.channelId
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to respond to invite');
+
+      if (accepted) {
+        router.push("/game?mode=multiplayer");
+      }
+
+      setGameInvite(null);
+    } catch (error) {
+      console.error('Failed to respond to invite:', error);
     }
-
-    setGameInvite(null);
   };
 
   // Loading animation variants
