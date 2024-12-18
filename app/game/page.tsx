@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, Suspense } from "react";
+import { io } from "socket.io-client";
 import { GameState } from "@/server/types";
 import { ParticipantsResponse, DiscordParticipant } from "@/types/discord";
 import { GameBoard } from "@/components/GameBoard";
@@ -12,8 +13,6 @@ import { useDiscordContext } from "@/contexts/DiscordContext";
 import { MoveLeft, Bot, Loader2, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-
-const POLL_INTERVAL = 1000; // Poll every second
 
 const AI_PARTICIPANT: DiscordParticipant = {
   id: "AI",
@@ -31,16 +30,20 @@ function GamePage() {
   const [isAIGame, setIsAIGame] = useState(false);
   const { currentUser, sdk } = useDiscordContext();
 
+  const [socket, setSocket] = useState<any>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [participants, setParticipants] = useState<ParticipantsResponse | null>(null);
+  const [participants, setParticipants] = useState<ParticipantsResponse | null>(
+    null
+  );
   const [gameInvite, setGameInvite] = useState<{
     inviter: DiscordParticipant;
     inviteId: string;
   } | null>(null);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
-  const [availablePlayers, setAvailablePlayers] = useState<DiscordParticipant[]>([]);
+  const [availablePlayers, setAvailablePlayers] = useState<
+    DiscordParticipant[]
+  >([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<number>(0);
 
   useEffect(() => {
     const mode = searchParams.get("mode");
@@ -50,22 +53,14 @@ function GamePage() {
   useEffect(() => {
     if (!sdk) return;
 
-    const handleParticipantsUpdate = async (e: ParticipantsResponse) => {
+    const handleParticipantsUpdate = (e: ParticipantsResponse) => {
       console.log("Discord participants update:", e);
-      if (currentUser && sdk.channelId) {
-        try {
-          await fetch('/api/session/participants', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              channelId: sdk.channelId,
-              participants: e.participants,
-              isAIGame
-            })
-          });
-        } catch (error) {
-          console.error('Failed to update participants:', error);
-        }
+      if (socket && currentUser) {
+        socket.emit("updateParticipants", {
+          channelId: sdk.channelId,
+          participants: e.participants,
+          isAIGame,
+        });
       }
     };
 
@@ -78,21 +73,13 @@ function GamePage() {
 
     waitForParticipants();
 
-    sdk.commands.getInstanceConnectedParticipants().then(async (participants) => {
-      if (currentUser && sdk.channelId) {
-        try {
-          await fetch('/api/session/participants', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              channelId: sdk.channelId,
-              participants: participants.participants,
-              isAIGame
-            })
-          });
-        } catch (error) {
-          console.error('Failed to update participants:', error);
-        }
+    sdk.commands.getInstanceConnectedParticipants().then((participants) => {
+      if (socket && currentUser) {
+        socket.emit("updateParticipants", {
+          channelId: sdk.channelId,
+          participants: participants.participants,
+          isAIGame,
+        });
       }
     });
 
@@ -102,210 +89,137 @@ function GamePage() {
         handleParticipantsUpdate
       );
     };
-  }, [sdk, currentUser, isAIGame]);
+  }, [sdk, socket, currentUser, isAIGame]);
 
-  // Initialize session
-  const initializeSession = useCallback(async () => {
-    if (!currentUser || !sdk?.channelId) return;
-
-    try {
-      const response = await fetch('/api/session/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channelId: sdk.channelId,
-          userId: currentUser.id,
-          username: currentUser.username,
-          isAIGame,
-          avatar: currentUser.avatar,
-          global_name: currentUser.global_name
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to initialize session');
-
-      const { participants, gameState, availableForGame } = await response.json();
-      
-      if (isAIGame) {
-        setParticipants({
-          participants: [...participants, AI_PARTICIPANT],
-        });
-      } else {
-        setParticipants({ participants });
-      }
-
-      if (gameState) setGameState(gameState);
-      setAvailablePlayers(availableForGame || []);
-
-      if (!isAIGame && availableForGame.length === 0) {
-        setSessionError("Waiting for other players to join...");
-      } else {
-        setSessionError(null);
-      }
-    } catch (error) {
-      console.error('Failed to initialize session:', error);
-      setSessionError("Failed to connect to game server");
-    }
-  }, [currentUser, sdk?.channelId, isAIGame]);
-
-  // Poll for updates
-  useEffect(() => {
-    if (!currentUser || !sdk?.channelId) return;
-
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch('/api/session/poll', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            channelId: sdk.channelId,
-            lastUpdate
-          })
-        });
-
-        if (response.status === 304) return; // No changes
-
-        if (!response.ok) throw new Error('Failed to poll for updates');
-
-        const data = await response.json();
-        
-        if (isAIGame) {
-          setParticipants({
-            participants: [...data.participants, AI_PARTICIPANT],
-          });
-        } else {
-          setParticipants({ participants: data.participants });
-        }
-
-        if (data.gameState) setGameState(data.gameState);
-        setAvailablePlayers(data.availableForGame || []);
-        setLastUpdate(data.lastUpdate);
-        setWaitingForResponse(false);
-
-        if (!isAIGame && data.availableForGame.length === 0) {
-          setSessionError("Waiting for other players to join...");
-        } else {
-          setSessionError(null);
-        }
-      } catch (error) {
-        console.error('Failed to poll for updates:', error);
-      }
-    }, POLL_INTERVAL);
-
-    return () => clearInterval(pollInterval);
-  }, [currentUser, sdk?.channelId, lastUpdate, isAIGame]);
-
-  // Initialize session on mount
   useEffect(() => {
     if (!currentUser) {
       router.push("/");
       return;
     }
 
-    initializeSession();
+    const newSocket = io("", {
+      path: "/.proxy/socket",
+      transports: ["polling", "websocket"],
+      timeout: 10000,
+    });
+    setSocket(newSocket);
+
+    //lets log all events
+    newSocket.onAny((eventName, ...args) => {
+      console.log(eventName, args);
+    });
+
+    newSocket.on("connect", () => {
+      console.log("Connected to socket server");
+      newSocket.emit("initializeSession", {
+        channelId: sdk?.channelId,
+        userId: currentUser.id,
+        username: currentUser.username,
+        isAIGame,
+      });
+    });
+
+    newSocket.on(
+      "sessionState",
+      ({ participants, gameState, availableForGame }) => {
+        if (isAIGame) {
+          setParticipants({
+            participants: [...participants, AI_PARTICIPANT],
+          });
+        } else {
+          setParticipants({ participants });
+        }
+
+        if (gameState) setGameState(gameState);
+        setAvailablePlayers(availableForGame || []);
+
+        if (!isAIGame && availableForGame.length === 0) {
+          setSessionError("Waiting for other players to join...");
+        } else {
+          setSessionError(null);
+        }
+      }
+    );
+
+    newSocket.on("gameState", (state: GameState) => {
+      setGameState(state);
+      setWaitingForResponse(false);
+    });
+
+    newSocket.on("gameInvite", ({ inviter, inviteId }) => {
+      setGameInvite({ inviter, inviteId });
+    });
+
+    newSocket.on("inviteResponse", ({ accepted, inviterId }) => {
+      if (accepted) {
+        setWaitingForResponse(false);
+      } else {
+        setWaitingForResponse(false);
+        alert("Player declined your invitation");
+      }
+    });
 
     return () => {
+      newSocket.close();
       setGameState(null);
       setParticipants(null);
       setGameInvite(null);
       setWaitingForResponse(false);
       setSessionError(null);
     };
-  }, [currentUser, router, initializeSession]);
+  }, [currentUser, sdk?.channelId, isAIGame, router]);
 
-  const handleMove = useCallback(async (position: number) => {
-    if (!gameState || !currentUser || !sdk?.channelId) return;
-
-    try {
-      const response = await fetch('/api/game/move', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+  const handleMove = useCallback(
+    (position: number) => {
+      if (socket && gameState && currentUser) {
+        socket.emit("move", {
           position,
           player: gameState.players.X === currentUser.id ? "X" : "O",
-          roomId: sdk.channelId
-        })
+          roomId: sdk?.channelId,
+        });
+      }
+    },
+    [socket, gameState, currentUser, sdk?.channelId]
+  );
+
+  const handleReset = useCallback(() => {
+    if (socket && currentUser) {
+      socket.emit("resetGame", {
+        channelId: sdk?.channelId,
+        userId: currentUser.id,
+        isAIGame,
       });
-
-      if (!response.ok) throw new Error('Failed to make move');
-
-      const { gameState: newGameState } = await response.json();
-      setGameState(newGameState);
-    } catch (error) {
-      console.error('Failed to make move:', error);
     }
-  }, [gameState, currentUser, sdk?.channelId]);
+  }, [socket, currentUser, sdk?.channelId, isAIGame]);
 
-  const handleReset = useCallback(async () => {
-    if (!currentUser || !sdk?.channelId) return;
-
-    try {
-      const response = await fetch('/api/game/reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channelId: sdk.channelId,
-          userId: currentUser.id,
-          isAIGame
-        })
-      });
-
-      if (!response.ok) throw new Error('Failed to reset game');
-
-      const { gameState: newGameState } = await response.json();
-      setGameState(newGameState);
-    } catch (error) {
-      console.error('Failed to reset game:', error);
-    }
-  }, [currentUser, sdk?.channelId, isAIGame]);
-
-  const handleInvitePlayer = useCallback(async (playerId: string) => {
-    if (!currentUser || !sdk?.channelId) return;
-
-    try {
-      setWaitingForResponse(true);
-      const response = await fetch('/api/game/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+  const handleInvitePlayer = useCallback(
+    (playerId: string) => {
+      if (socket && currentUser) {
+        socket.emit("sendGameInvite", {
           inviterId: currentUser.id,
           inviteeId: playerId,
-          channelId: sdk.channelId
-        })
-      });
-
-      if (!response.ok) {
-        setWaitingForResponse(false);
-        throw new Error('Failed to send game invite');
+          channelId: sdk?.channelId,
+        });
+        setWaitingForResponse(true);
       }
-    } catch (error) {
-      console.error('Failed to send game invite:', error);
-      setWaitingForResponse(false);
-    }
-  }, [currentUser, sdk?.channelId]);
+    },
+    [socket, currentUser, sdk?.channelId]
+  );
 
   const handleInviteResponse = useCallback(
     (accepted: boolean) => {
-      if (!gameInvite) return;
-
-      try {
-        fetch('/api/game/respond', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            inviteId: gameInvite.inviteId,
-            accepted,
-            inviterId: gameInvite.inviter.id,
-            inviteeId: currentUser?.id,
-            channelId: sdk?.channelId,
-          }),
+      if (socket && gameInvite) {
+        socket.emit("respondToInvite", {
+          inviteId: gameInvite.inviteId,
+          accepted,
+          inviterId: gameInvite.inviter.id,
+          inviteeId: currentUser?.id,
+          channelId: sdk?.channelId,
         });
         setGameInvite(null);
-      } catch (error) {
-        console.error('Failed to respond to invite:', error);
       }
     },
-    [gameInvite, currentUser?.id, sdk?.channelId]
+    [socket, gameInvite, currentUser?.id, sdk?.channelId]
   );
 
   if (!participants || !currentUser) {
