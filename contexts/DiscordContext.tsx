@@ -100,8 +100,14 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
     if (typeof window !== "undefined") {
       const savedSdkState = localStorage.getItem("discord_sdk_state");
       if (savedSdkState) {
-        const { isInitialized } = JSON.parse(savedSdkState);
-        if (isInitialized) {
+        const { isInitialized, frameId } = JSON.parse(savedSdkState);
+        if (isInitialized && frameId) {
+          // Add frame_id to URL if not present
+          const url = new URL(window.location.href);
+          if (!url.searchParams.has("frame_id")) {
+            url.searchParams.set("frame_id", frameId);
+            window.history.replaceState({}, "", url.toString());
+          }
           const sdkInstance = new DiscordSDK(clientId);
           return sdkInstance;
         }
@@ -122,10 +128,15 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
   // Store SDK state in localStorage
   useEffect(() => {
     if (sdk) {
-      localStorage.setItem(
-        "discord_sdk_state",
-        JSON.stringify({ isInitialized: true })
-      );
+      // Get frame_id from URL
+      const url = new URL(window.location.href);
+      const frameId = url.searchParams.get("frame_id");
+      if (frameId) {
+        localStorage.setItem(
+          "discord_sdk_state",
+          JSON.stringify({ isInitialized: true, frameId })
+        );
+      }
     } else {
       localStorage.removeItem("discord_sdk_state");
     }
@@ -164,9 +175,16 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
       // Check if SDK is already initialized
       const savedSdkState = localStorage.getItem("discord_sdk_state");
       if (savedSdkState) {
-        const { isInitialized } = JSON.parse(savedSdkState);
-        if (isInitialized && sdk) {
+        const { isInitialized, frameId } = JSON.parse(savedSdkState);
+        if (isInitialized && sdk && frameId) {
           try {
+            // Ensure frame_id is in URL
+            const url = new URL(window.location.href);
+            if (!url.searchParams.has("frame_id")) {
+              url.searchParams.set("frame_id", frameId);
+              window.history.replaceState({}, "", url.toString());
+            }
+
             // Just ensure the SDK is ready
             await sdk.ready();
             Logger.info("Discord SDK already initialized");
@@ -199,10 +217,16 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
         await sdkInstance.ready();
         Logger.info("Discord SDK initialized");
         setSdk(sdkInstance);
-        localStorage.setItem(
-          "discord_sdk_state",
-          JSON.stringify({ isInitialized: true })
-        );
+
+        // Store SDK state with frame_id
+        const url = new URL(window.location.href);
+        const frameId = url.searchParams.get("frame_id");
+        if (frameId) {
+          localStorage.setItem(
+            "discord_sdk_state",
+            JSON.stringify({ isInitialized: true, frameId })
+          );
+        }
 
         // Handle authentication after new initialization
         const storedAuth = localStorage.getItem("discord_auth");
@@ -375,14 +399,35 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
   }, [sdk, auth]);
 
   const clearStoredData = useCallback(async () => {
+    // Save frame_id before clearing
+    const savedSdkState = localStorage.getItem("discord_sdk_state");
+    const frameId = savedSdkState ? JSON.parse(savedSdkState).frameId : null;
+
     localStorage.removeItem("discord_auth");
     localStorage.removeItem("discord_guild");
     localStorage.removeItem("discord_channel");
     localStorage.removeItem("discord_user");
+
+    // Only clear SDK state if we don't have a frame_id
+    if (!frameId) {
+      localStorage.removeItem("discord_sdk_state");
+    } else {
+      // Keep frame_id but clear initialization state
+      localStorage.setItem(
+        "discord_sdk_state",
+        JSON.stringify({ isInitialized: false, frameId })
+      );
+    }
+
     setAuth(null);
     setCurrentGuild(null);
     setCurrentChannel(null);
     setCurrentUser(null);
+
+    // Don't clear SDK if we have frame_id
+    if (!frameId) {
+      setSdk(null);
+    }
   }, []);
 
   const value = {
