@@ -100,7 +100,12 @@ function GamePage() {
     const newSocket = io("", {
       path: "/.proxy/socket",
       transports: ["polling"],
-      timeout: 10000,
+      query: {
+        channelId: sdk?.channelId,
+        userId: currentUser.id,
+        username: currentUser.username,
+      },
+      timeout: 5000,
     });
     setSocket(newSocket);
 
