@@ -72,15 +72,11 @@ function GameComponent({ mode, onBack }: GameProps) {
       );
     };
 
-    sdk.commands.getInstanceConnectedParticipants().then((participants) => {
-      if (socket && currentUser) {
-        socket.emit("updateParticipants", {
-          channelId: sdk.channelId,
-          participants: participants.participants,
-          isAIGame,
-        });
-      }
-    });
+    const getParticipants = async () => {
+      const participants =
+        await sdk.commands.getInstanceConnectedParticipants();
+      handleParticipantsUpdate(participants);
+    };
 
     waitForParticipantsUpdate();
 
@@ -329,7 +325,9 @@ function GameComponent({ mode, onBack }: GameProps) {
                       </span>
                       <span className="text-white/60">Current Turn:</span>
                       <span className="text-white font-medium">
-                        {gameState.players[gameState.currentPlayer as keyof typeof gameState.players] === currentUser.id
+                        {gameState.players[
+                          gameState.currentPlayer as keyof typeof gameState.players
+                        ] === currentUser.id
                           ? "Your Turn"
                           : "Opponent's Turn"}
                       </span>
