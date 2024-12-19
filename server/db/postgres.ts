@@ -2,12 +2,29 @@ import { Pool } from 'pg';
 import { UserStats } from '../types';
 
 const pool = new Pool({
-  
   user: process.env.POSTGRES_USER,
   password: process.env.POSTGRES_PASSWORD,
   host: process.env.POSTGRES_HOST,
   port: parseInt(process.env.POSTGRES_PORT || '5432'),
   database: process.env.POSTGRES_DB,
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+  maxUses: 7500, // Close and replace a connection after it has been used 7500 times
+});
+
+// Handle pool errors
+pool.on('error', (err, client) => {
+  console.error('Unexpected error on idle client', err);
+});
+
+// Handle pool connection issues
+pool.on('connect', (client) => {
+  console.log('New client connected to the pool');
+});
+
+pool.on('remove', (client) => {
+  console.log('Client removed from pool');
 });
 
 export async function initDB() {
@@ -25,7 +42,8 @@ export async function initDB() {
         draws INTEGER DEFAULT 0,
         total_games INTEGER DEFAULT 0,
         ai_games_played INTEGER DEFAULT 0,
-        ai_wins INTEGER DEFAULT 0
+        ai_wins INTEGER DEFAULT 0,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -62,6 +80,7 @@ export async function initDB() {
     `);
 
     await client.query('COMMIT');
+    console.log('Database initialized successfully');
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error initializing database:', error);
@@ -71,13 +90,95 @@ export async function initDB() {
   }
 }
 
-// Add function to log game completion
-export async function logGameCompletion(gameData: {
+export async function initUserStats(userId: string, username: string) {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO user_stats (user_id, username)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id) DO UPDATE
+       SET username = EXCLUDED.username,
+           updated_at = CURRENT_TIMESTAMP`,
+      [userId, username]
+    );
+  } catch (error) {
+    console.error('Error initializing user stats:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getUserStats(userId: string): Promise<UserStats | null> {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      'SELECT * FROM user_stats WHERE user_id = $1',
+      [userId]
+    );
+    if (!result.rows[0]) return null;
+    
+    return {
+      userId: result.rows[0].user_id,
+      username: result.rows[0].username,
+      wins: result.rows[0].wins,
+      losses: result.rows[0].losses,
+      draws: result.rows[0].draws,
+      totalGames: result.rows[0].total_games,
+      aiGamesPlayed: result.rows[0].ai_games_played,
+      aiWins: result.rows[0].ai_wins
+    };
+  } catch (error) {
+    console.error('Error getting user stats:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateUserStats(
+  userId: string,
+  update: Partial<UserStats>
+) {
+  const client = await pool.connect();
+  try {
+    const setClause = Object.entries(update)
+      .filter(([key]) => key !== 'user_id' && key !== 'username')
+      .map(([key], index) => `${key} = $${index + 2}`)
+      .join(', ');
+
+    const values = [userId, ...Object.entries(update)
+      .filter(([key]) => key !== 'user_id' && key !== 'username')
+      .map(([_, value]) => value)];
+
+    await client.query(
+      `UPDATE user_stats 
+       SET ${setClause}, updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $1`,
+      values
+    );
+  } catch (error) {
+    console.error('Error updating user stats:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function logGameCompletion({
+  roomId,
+  playerX,
+  playerO,
+  winner,
+  isDraw,
+  isAIGame,
+  moves
+}: {
   roomId: string;
   playerX: string;
   playerO: string;
   winner?: string;
-  isDraw: boolean;
+  isDraw?: boolean;
   isAIGame: boolean;
   moves: any[];
 }) {
@@ -92,21 +193,21 @@ export async function logGameCompletion(gameData: {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
       RETURNING game_id`,
       [
-        gameData.roomId,
-        gameData.playerX,
-        gameData.playerO,
-        gameData.winner || null,
-        gameData.isDraw,
-        gameData.isAIGame,
-        JSON.stringify(gameData.moves)
+        roomId,
+        playerX,
+        playerO,
+        winner || null,
+        isDraw,
+        isAIGame,
+        JSON.stringify(moves)
       ]
     );
 
     // Update player stats within the same transaction
-    if (gameData.isDraw) {
+    if (isDraw) {
       // Handle draw
-      if (gameData.isAIGame) {
-        const humanPlayer = gameData.playerX === 'AI' ? gameData.playerO : gameData.playerX;
+      if (isAIGame) {
+        const humanPlayer = playerX === 'AI' ? playerO : playerX;
         await updateUserStatsInTransaction(client, {
           userId: humanPlayer,
           draws: 1,
@@ -115,22 +216,22 @@ export async function logGameCompletion(gameData: {
         });
       } else {
         await updateUserStatsInTransaction(client, {
-          userId: gameData.playerX,
+          userId: playerX,
           draws: 1,
           totalGames: 1
         });
         await updateUserStatsInTransaction(client, {
-          userId: gameData.playerO,
+          userId: playerO,
           draws: 1,
           totalGames: 1
         });
       }
-    } else if (gameData.winner) {
+    } else if (winner) {
       // Handle win/loss
-      const winnerId = gameData.winner === 'X' ? gameData.playerX : gameData.playerO;
-      const loserId = gameData.winner === 'X' ? gameData.playerO : gameData.playerX;
+      const winnerId = winner === 'X' ? playerX : playerO;
+      const loserId = winner === 'X' ? playerO : playerX;
 
-      if (gameData.isAIGame) {
+      if (isAIGame) {
         if (winnerId !== 'AI') {
           await updateUserStatsInTransaction(client, {
             userId: winnerId,
@@ -165,6 +266,7 @@ export async function logGameCompletion(gameData: {
     return gameResult.rows[0].game_id;
   } catch (error) {
     await client.query('ROLLBACK');
+    console.error('Error logging game completion:', error);
     throw error;
   } finally {
     client.release();
@@ -197,76 +299,21 @@ async function updateUserStatsInTransaction(
   );
 }
 
-export async function updateUserStats(stats: Partial<UserStats> & { userId: string }) {
-  const client = await pool.connect();
+// Graceful shutdown
+process.on('SIGTERM', async () => {
   try {
-    await client.query(
-      `INSERT INTO user_stats (
-        user_id, username, wins, losses, draws, total_games, ai_games_played, ai_wins
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        wins = COALESCE(user_stats.wins, 0) + $3,
-        losses = COALESCE(user_stats.losses, 0) + $4,
-        draws = COALESCE(user_stats.draws, 0) + $5,
-        total_games = COALESCE(user_stats.total_games, 0) + $6,
-        ai_games_played = COALESCE(user_stats.ai_games_played, 0) + $7,
-        ai_wins = COALESCE(user_stats.ai_wins, 0) + $8`,
-      [
-        stats.userId,
-        stats.username || '',
-        stats.wins || 0,
-        stats.losses || 0,
-        stats.draws || 0,
-        stats.totalGames || 0,
-        stats.aiGamesPlayed || 0,
-        stats.aiWins || 0
-      ]
-    );
-  } finally {
-    client.release();
+    await pool.end();
+    console.log('Database pool has ended');
+  } catch (error) {
+    console.error('Error during database pool shutdown:', error);
   }
-}
+});
 
-export async function initUserStats(userId: string, username: string): Promise<void> {
-  const client = await pool.connect();
+process.on('SIGINT', async () => {
   try {
-    await client.query(
-      `INSERT INTO user_stats (
-        user_id, username, wins, losses, draws, total_games, ai_games_played, ai_wins
-      )
-      VALUES ($1, $2, 0, 0, 0, 0, 0, 0)
-      ON CONFLICT (user_id) DO UPDATE SET
-        username = EXCLUDED.username,
-        updated_at = CURRENT_TIMESTAMP`,
-      [userId, username]
-    );
-  } finally {
-    client.release();
+    await pool.end();
+    console.log('Database pool has ended');
+  } catch (error) {
+    console.error('Error during database pool shutdown:', error);
   }
-}
-
-export async function getUserStats(userId: string): Promise<UserStats | null> {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      'SELECT * FROM user_stats WHERE user_id = $1',
-      [userId]
-    );
-    if (!result.rows[0]) return null;
-    
-    return {
-      userId: result.rows[0].user_id,
-      username: result.rows[0].username,
-      wins: result.rows[0].wins,
-      losses: result.rows[0].losses,
-      draws: result.rows[0].draws,
-      totalGames: result.rows[0].total_games,
-      aiGamesPlayed: result.rows[0].ai_games_played,
-      aiWins: result.rows[0].ai_wins
-    };
-  } finally {
-    client.release();
-  }
-}
+});

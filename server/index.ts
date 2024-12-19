@@ -25,10 +25,49 @@ const io = new Server(httpServer, {
   transports: ['websocket', 'polling'],
   allowUpgrades: true,
   pingTimeout: 60000,
-  pingInterval: 25000
+  pingInterval: 25000,
+  connectTimeout: 45000,
+  maxHttpBufferSize: 1e6, // 1 MB
+  perMessageDeflate: {
+    threshold: 1024 // Only compress data above 1KB
+  },
+  upgradeTimeout: 30000,
+  // Performance optimizations
+  serveClient: false, // Don't serve client files
+  allowEIO3: false, // Only use EIO
 });
 
-const PORT = process.env.SOCKET_PORT || 4000;
+// Configure worker threads if available
+if (process.env.NODE_ENV === 'production') {
+  const cluster = require('cluster');
+  const numCPUs = require('os').cpus().length;
+
+  if (cluster.isMaster) {
+    console.log(`Master ${process.pid} is running`);
+
+    // Fork workers
+    for (let i = 0; i < numCPUs; i++) {
+      cluster.fork();
+    }
+
+    cluster.on('exit', (worker: any, code: any, signal: any) => {
+      console.log(`Worker ${worker.process.pid} died`);
+      // Replace the dead worker
+      cluster.fork();
+    });
+  } else {
+    // Workers can share any TCP connection
+    httpServer.listen(4000, () => {
+      console.log(`Worker ${process.pid} started on port 4000`);
+    });
+  }
+} else {
+  httpServer.listen(4000, () => {
+    console.log(`Server listening on port 4000`);
+  });
+}
+
+const PORT = 4000;
 
 interface GameSession {
   gameId: string;
@@ -230,6 +269,7 @@ io.on('connection', (socket) => {
       availableForGame: isAIGame 
         ? [] 
         : session.participants.filter(p => 
+            p.socketId && // Only include connected players
             p.id !== userInfo.userId &&
             p.id !== (session.games.get(userInfo.userId)?.gameState.players.X || null) &&
             p.id !== (session.games.get(userInfo.userId)?.gameState.players.O || null)
@@ -390,8 +430,12 @@ io.on('connection', (socket) => {
           );
 
         for (const game of userGames) {
-          const xPlayerConnected = session.participants.find(p => p.id === game.gameState.players.X)?.socketId;
-          const oPlayerConnected = session.participants.find(p => p.id === game.gameState.players.O)?.socketId;
+          const xPlayerConnected = session.participants.some(p => 
+            p.id === game.gameState.players.X && p.socketId
+          );
+          const oPlayerConnected = session.participants.some(p => 
+            p.id === game.gameState.players.O && p.socketId
+          );
 
           if (!xPlayerConnected && !oPlayerConnected && !game.gameState.isAIGame) {
             // Log the incomplete game
@@ -510,6 +554,46 @@ io.on('connection', (socket) => {
   });
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`Socket.IO server running on port ${PORT}`);
+// Clean up inactive sessions periodically
+setInterval(() => {
+  for (const [channelId, session] of activeSessions.entries()) {
+    // Remove disconnected participants
+    session.participants = session.participants.filter(p => p.socketId);
+    
+    // Clean up finished or abandoned games
+    for (const [gameId, game] of session.games.entries()) {
+      const xConnected = session.participants.some(p => 
+        p.id === game.gameState.players.X && p.socketId
+      );
+      const oConnected = session.participants.some(p => 
+        p.id === game.gameState.players.O && p.socketId
+      );
+
+      if (!xConnected && !oConnected && !game.gameState.isAIGame) {
+        session.games.delete(gameId);
+      }
+    }
+
+    // Remove empty sessions
+    if (session.participants.length === 0 && session.games.size === 0) {
+      activeSessions.delete(channelId);
+    }
+  }
+}, 300000); // Clean up every 5 minutes
+
+// Handle process termination gracefully
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Closing server...');
+  httpServer.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Closing server...');
+  httpServer.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });

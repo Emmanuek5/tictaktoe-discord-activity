@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Users } from "lucide-react";
 import Game from "@/components/Game";
 import Image from "next/image";
+import Loader from "@/components/Loader";
 
 export default function Home() {
   const {
@@ -97,7 +98,7 @@ export default function Home() {
 
       const userStatsInterval = setInterval(() => {
         socket.emit("requestStats", { userId: currentUser?.id });
-      }, 10000);
+      }, 500000); // 5 minutes
 
       return () => {
         clearInterval(userStatsInterval);
@@ -124,11 +125,7 @@ export default function Home() {
   };
 
   if (isLoading || !currentUser) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-[#0f1117]">
-        <div className="text-white text-2xl">Loading...</div>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (error) {
@@ -265,7 +262,10 @@ export default function Home() {
               <div className="max-w-md w-full space-y-12 p-8">
                 <div className="text-center space-y-4">
                   <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
-                    Tic Tac Toe
+                    Tic Tac{" "}
+                    <span className="text-bold bg-transparent text-clip bg-gradient-to-r from-pink-500 to-rose-500">
+                      Showdown
+                    </span>
                   </h1>
                   <p className="text-lg text-white/60">
                     Challenge friends or test your skills against AI
