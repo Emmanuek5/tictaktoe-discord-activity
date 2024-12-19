@@ -34,6 +34,7 @@ function GameComponent({ mode, onBack }: GameProps) {
 
   const [socket, setSocket] = useState<any>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
   const [participants, setParticipants] = useState<ParticipantsResponse | null>(
     null
   );
@@ -140,10 +141,20 @@ function GameComponent({ mode, onBack }: GameProps) {
       }
     );
 
-    newSocket.on("gameState", (state: GameState) => {
-      setGameState(state);
-      setWaitingForResponse(false);
-    });
+    newSocket.on(
+      "gameState",
+      ({
+        gameId: newGameId,
+        state,
+      }: {
+        gameId: string;
+        state: GameState | null;
+      }) => {
+        setGameId(newGameId);
+        setGameState(state);
+        setWaitingForResponse(false);
+      }
+    );
 
     newSocket.on("gameInvite", ({ inviter, inviteId }) => {
       setGameInvite({ inviter, inviteId });
@@ -173,26 +184,31 @@ function GameComponent({ mode, onBack }: GameProps) {
 
   const handleMove = useCallback(
     (position: number) => {
-      if (socket && gameState && currentUser) {
-        socket.emit("move", {
-          position,
-          player: gameState.players.X === currentUser.id ? "X" : "O",
-          roomId: sdk?.channelId,
-        });
-      }
+      if (!socket || !gameState || !currentUser || !gameId) return;
+
+      const playerRole = gameState.players.X === currentUser.id ? "X" : "O";
+      if (gameState.currentPlayer !== playerRole) return;
+
+      socket.emit("move", {
+        position,
+        player: playerRole,
+        roomId: sdk?.channelId,
+        gameId,
+      });
     },
-    [socket, gameState, currentUser, sdk?.channelId]
+    [socket, gameState, currentUser, sdk?.channelId, gameId]
   );
 
   const handleReset = useCallback(() => {
-    if (socket && currentUser) {
-      socket.emit("resetGame", {
-        channelId: sdk?.channelId,
-        userId: currentUser.id,
-        isAIGame,
-      });
-    }
-  }, [socket, currentUser, sdk?.channelId, isAIGame]);
+    if (!socket || !currentUser || !gameId) return;
+
+    socket.emit("resetGame", {
+      channelId: sdk?.channelId,
+      userId: currentUser.id,
+      isAIGame,
+      gameId,
+    });
+  }, [socket, currentUser, sdk?.channelId, isAIGame, gameId]);
 
   const handleInvitePlayer = useCallback(
     (playerId: string) => {
