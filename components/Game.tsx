@@ -25,10 +25,14 @@ const AI_PARTICIPANT: DiscordParticipant = {
 
 interface GameProps {
   mode: "ai" | "pvp";
+  inviteData?: {
+    inviterId: string;
+    inviteId: string;
+  };
   onBack: () => void;
 }
 
-function GameComponent({ mode, onBack }: GameProps) {
+function GameComponent({ mode, inviteData, onBack }: GameProps) {
   const [isAIGame, setIsAIGame] = useState(mode === "ai");
   const { currentUser, sdk } = useDiscordContext();
 
@@ -116,6 +120,10 @@ function GameComponent({ mode, onBack }: GameProps) {
         userId: currentUser.id,
         username: currentUser.username,
         isAIGame,
+        ...(inviteData && {
+          inviterId: inviteData.inviterId,
+          inviteId: inviteData.inviteId,
+        }),
       });
     });
 
@@ -188,7 +196,7 @@ function GameComponent({ mode, onBack }: GameProps) {
       setWaitingForResponse(false);
       setSessionError(null);
     };
-  }, [currentUser?.id, sdk?.channelId, isAIGame]);
+  }, [currentUser?.id, sdk?.channelId, isAIGame, inviteData]);
 
   const handleMove = useCallback(
     (position: number) => {
@@ -471,10 +479,10 @@ function GameComponent({ mode, onBack }: GameProps) {
   );
 }
 
-export default function Game({ mode, onBack }: GameProps) {
+export default function Game({ mode, inviteData, onBack }: GameProps) {
   return (
     <Suspense>
-      <GameComponent mode={mode} onBack={onBack} />
+      <GameComponent mode={mode} inviteData={inviteData} onBack={onBack} />
     </Suspense>
   );
 }

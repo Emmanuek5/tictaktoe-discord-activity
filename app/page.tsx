@@ -12,6 +12,14 @@ import Game from "@/components/Game";
 import Image from "next/image";
 import Loader from "@/components/Loader";
 
+interface GameModeState {
+  type: "menu" | "ai" | "pvp";
+  inviteData?: {
+    inviterId: string;
+    inviteId: string;
+  };
+}
+
 export default function Home() {
   const {
     isLoading,
@@ -24,7 +32,7 @@ export default function Home() {
   } = useDiscordContext();
 
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
-  const [gameMode, setGameMode] = useState<"menu" | "ai" | "pvp">("menu");
+  const [gameMode, setGameMode] = useState<GameModeState>({ type: "menu" });
   const [socket, setSocket] = useState<any>(null);
   const [gameInvite, setGameInvite] = useState<{
     inviter: any;
@@ -120,14 +128,12 @@ export default function Home() {
     });
 
     if (accepted) {
-      setGameMode("pvp");
-      // Re-initialize the session for PvP game
-      socket.emit("initializeSession", {
-        channelId: sdk?.channelId,
-        userId: currentUser?.id,
-        username: currentUser?.username,
-        isAIGame: false,
-        inviterId: gameInvite.inviter.id,
+      setGameMode({
+        type: "pvp",
+        inviteData: {
+          inviterId: gameInvite.inviter.id,
+          inviteId: gameInvite.inviteId,
+        },
       });
     }
 
@@ -148,13 +154,13 @@ export default function Home() {
 
   const handleGameModeChange = (mode: "menu" | "ai" | "pvp") => {
     socket?.emit("requestStats", { userId: currentUser.id });
-    setGameMode(mode);
+    setGameMode({ type: mode });
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
+    <div className="h-screen bg-[#0f1117] text-white ">
       <AnimatePresence mode="wait">
-        {gameMode === "menu" ? (
+        {gameMode.type === "menu" ? (
           <motion.div
             key="menu"
             initial={{ opacity: 0, y: 20 }}
@@ -323,18 +329,12 @@ export default function Home() {
             </div>
           </motion.div>
         ) : (
-          <motion.div
+          <Game
             key="game"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="h-full"
-          >
-            <Game
-              mode={gameMode === "ai" ? "ai" : "pvp"}
-              onBack={() => handleGameModeChange("menu")}
-            />
-          </motion.div>
+            mode={gameMode.type}
+            inviteData={gameMode.inviteData}
+            onBack={() => setGameMode({ type: "menu" })}
+          />
         )}
       </AnimatePresence>
 
