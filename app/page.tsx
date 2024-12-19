@@ -35,9 +35,11 @@ export default function Home() {
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      const width = Math.min(Math.max(window.innerWidth, 1536), 1536);
-      const height = Math.min(Math.max(window.innerHeight, 720), 720);
-      setPageSize({ width, height });
+      // Remove fixed constraints for mobile responsiveness
+      setPageSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
     };
 
     handleResize();
@@ -73,6 +75,12 @@ export default function Home() {
 
     // Request initial stats
     if (currentUser?.id) {
+      newSocket.emit("initializeSession", {
+        channelId: sdk.channelId,
+        userId: currentUser.id,
+        username: currentUser.username,
+        isAIGame: false,
+      });
       newSocket.emit("requestStats", { userId: currentUser.id });
     }
 
@@ -136,7 +144,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen bg-[#0f1117] text-white overflow-hidden">
+    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
       <AnimatePresence mode="wait">
         {gameMode === "menu" ? (
           <motion.div
@@ -144,33 +152,33 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="h-full flex"
+            className="min-h-screen flex flex-col md:flex-row"
           >
             {/* Left sidebar with user stats */}
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="w-80 p-6 border-r border-white/10"
+              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-white/10"
             >
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {/* User Profile */}
-                <div className="flex flex-col items-center space-y-4">
+                <div className="flex md:flex-col items-center space-x-4 md:space-x-0 md:space-y-4">
                   <Image
                     src={
                       currentUser?.avatar
                         ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
                         : "https://cdn.discordapp.com/embed/avatars/0.png"
                     }
-                    width={80}
-                    height={80}
+                    width={60}
+                    height={60}
                     alt="User Avatar"
-                    className="rounded-full border-2 border-white/20"
+                    className="rounded-full border-2 border-white/20 md:w-20 md:h-20"
                   />
-                  <div className="text-center">
-                    <h2 className="font-semibold text-lg">
+                  <div className="text-left md:text-center">
+                    <h2 className="font-semibold text-base md:text-lg">
                       {currentUser.global_name || currentUser.username}
                     </h2>
-                    <p className="text-sm text-white/60">
+                    <p className="text-xs md:text-sm text-white/60">
                       {currentGuild?.name} • {currentChannel?.name}
                     </p>
                   </div>
@@ -178,17 +186,19 @@ export default function Home() {
 
                 {/* Stats */}
                 {userStats && (
-                  <div className="space-y-4">
-                    <div className="bg-white/5 rounded-lg p-4">
+                  <div className="space-y-4 md:space-y-6">
+                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
                       <h3 className="text-sm font-medium mb-3 text-white/70">
                         Overall Stats
                       </h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4 md:gap-6">
                         <div className="text-center">
                           <p className="text-2xl font-bold">
                             {userStats.totalGames}
                           </p>
-                          <p className="text-xs text-white/60">Games Played</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            Games Played
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold">
@@ -197,47 +207,57 @@ export default function Home() {
                             ).toFixed(1)}
                             %
                           </p>
-                          <p className="text-xs text-white/60">Win Rate</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            Win Rate
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white/5 rounded-lg p-4">
+                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
                       <h3 className="text-sm font-medium mb-3 text-white/70">
                         Game Results
                       </h3>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-2 md:gap-4">
                         <div className="text-center">
                           <p className="text-xl font-bold text-green-400">
                             {userStats.wins}
                           </p>
-                          <p className="text-xs text-white/60">Wins</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            Wins
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xl font-bold text-red-400">
                             {userStats.losses}
                           </p>
-                          <p className="text-xs text-white/60">Losses</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            Losses
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xl font-bold text-yellow-400">
                             {userStats.draws}
                           </p>
-                          <p className="text-xs text-white/60">Draws</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            Draws
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-white/5 rounded-lg p-4">
+                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
                       <h3 className="text-sm font-medium mb-3 text-white/70">
                         AI Games
                       </h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4 md:gap-6">
                         <div className="text-center">
                           <p className="text-xl font-bold">
                             {userStats.aiGamesPlayed}
                           </p>
-                          <p className="text-xs text-white/60">Games vs AI</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            Games vs AI
+                          </p>
                         </div>
                         <div className="text-center">
                           <p className="text-xl font-bold">
@@ -247,7 +267,9 @@ export default function Home() {
                             ).toFixed(1)}
                             %
                           </p>
-                          <p className="text-xs text-white/60">AI Win Rate</p>
+                          <p className="text-xs md:text-sm text-white/60">
+                            AI Win Rate
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -258,7 +280,7 @@ export default function Home() {
 
             {/* Main content */}
             <div className="flex-1 flex items-center justify-center">
-              <div className="max-w-md w-full space-y-12 p-8">
+              <div className="max-w-md w-full space-y-12 p-8 md:p-12">
                 <div className="text-center space-y-4">
                   <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
                     Tic Tac{" "}
@@ -266,15 +288,15 @@ export default function Home() {
                       Showdown
                     </span>
                   </h1>
-                  <p className="text-lg text-white/60">
+                  <p className="text-lg md:text-xl text-white/60">
                     Challenge friends or test your skills against AI
                   </p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 md:space-y-6">
                   <Button
                     size="lg"
-                    className="w-full h-16 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
+                    className="w-full h-16 md:h-20 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
                     onClick={() => handleGameModeChange("pvp")}
                   >
                     <Users className="w-6 h-6 mr-3" />
@@ -282,7 +304,7 @@ export default function Home() {
                   </Button>
                   <Button
                     size="lg"
-                    className="w-full h-16 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
+                    className="w-full h-16 md:h-20 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
                     onClick={() => handleGameModeChange("ai")}
                   >
                     <Bot className="w-6 h-6 mr-3" />

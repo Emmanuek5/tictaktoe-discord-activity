@@ -39,10 +39,10 @@ export function GameBoard({
   };
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="text-xl font-bold text-white">{getStatusMessage()}</div>
+    <div className="flex flex-col items-center gap-4 md:gap-6 p-4 md:p-0">
+      <div className="text-lg md:text-xl font-bold text-white text-center">{getStatusMessage()}</div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-[min(90vw,400px)]">
         {gameState.board.map((cell, index) => (
           <button
             key={index}
@@ -55,7 +55,7 @@ export function GameBoard({
             }
             className={`
               aspect-square flex items-center justify-center
-              text-4xl font-bold rounded-lg
+              text-2xl md:text-4xl font-bold rounded-lg
               ${
                 cell === null &&
                 gameState.players[gameState.currentPlayer as keyof typeof gameState.players] === currentUserId &&
@@ -91,10 +91,10 @@ export function GameBoard({
         ))}
       </div>
 
-      <div className="flex gap-4 text-sm">
+      <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm justify-center">
         <div
           className={cn(
-            "px-4 py-2 rounded-full",
+            "px-3 md:px-4 py-2 rounded-full",
             playerSymbol === "X" ? "bg-game-purple/20" : "bg-game-blue-light/20"
           )}
         >
@@ -102,7 +102,7 @@ export function GameBoard({
         </div>
         <div
           className={cn(
-            "px-4 py-2 rounded-full",
+            "px-3 md:px-4 py-2 rounded-full",
             gameState.currentPlayer === "X"
               ? "bg-game-purple/20"
               : "bg-game-blue-light/20"
@@ -115,8 +115,8 @@ export function GameBoard({
       {isGameOver && (
         <button
           onClick={onReset}
-          className="mt-4 px-6 py-2 bg-game-purple hover:bg-game-purple/80 text-white rounded-lg 
-            transition-colors font-semibold"
+          className="mt-2 md:mt-4 px-4 md:px-6 py-2 bg-game-purple hover:bg-game-purple/80 text-white rounded-lg 
+            transition-colors font-semibold text-sm md:text-base"
         >
           Play Again
         </button>
