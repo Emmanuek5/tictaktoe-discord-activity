@@ -25,10 +25,14 @@ const AI_PARTICIPANT: DiscordParticipant = {
 
 interface GameProps {
   mode: "ai" | "pvp";
+  inviteData?: {
+    inviter: DiscordParticipant;
+    inviteId: string;
+  } | null;
   onBack: () => void;
 }
 
-function GameComponent({ mode, onBack }: GameProps) {
+function GameComponent({ mode, inviteData, onBack }: GameProps) {
   const [isAIGame, setIsAIGame] = useState(mode === "ai");
   const { currentUser, sdk } = useDiscordContext();
 
@@ -117,6 +121,16 @@ function GameComponent({ mode, onBack }: GameProps) {
         username: currentUser.username,
         isAIGame,
       });
+
+      if (inviteData) {
+        newSocket.emit("respondToInvite", {
+          inviteId: inviteData.inviteId,
+          accepted: true,
+          inviterId: inviteData.inviter.id,
+          inviteeId: currentUser.id,
+          channelId: sdk.channelId,
+        });
+      }
     });
 
     newSocket.on(

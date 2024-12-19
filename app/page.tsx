@@ -325,6 +325,7 @@ export default function Home() {
             <Game
               mode={gameMode === "ai" ? "ai" : "pvp"}
               onBack={() => handleGameModeChange("menu")}
+              inviteData={gameInvite}
             />
           </motion.div>
         )}
