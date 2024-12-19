@@ -115,6 +115,19 @@ function GameComponent({ mode, inviteData, onBack }: GameProps) {
 
     newSocket.on("connect", () => {
       console.log("Connected to socket server");
+
+      // If we have invite data, send the response first
+      if (inviteData) {
+        newSocket.emit("respondToInvite", {
+          inviteId: inviteData.inviteId,
+          accepted: true,
+          inviterId: inviteData.inviterId,
+          inviteeId: currentUser?.id,
+          channelId: sdk?.channelId,
+        });
+      }
+
+      // Then initialize the session
       newSocket.emit("initializeSession", {
         channelId: sdk.channelId,
         userId: currentUser.id,

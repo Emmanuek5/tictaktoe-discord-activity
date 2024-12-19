@@ -119,14 +119,6 @@ export default function Home() {
   const handleInviteResponse = async (accepted: boolean) => {
     if (!socket || !gameInvite) return;
 
-    socket.emit("respondToInvite", {
-      inviteId: gameInvite.inviteId,
-      accepted,
-      inviterId: gameInvite.inviter.id,
-      inviteeId: currentUser?.id,
-      channelId: sdk?.channelId,
-    });
-
     if (accepted) {
       setGameMode({
         type: "pvp",
@@ -134,6 +126,14 @@ export default function Home() {
           inviterId: gameInvite.inviter.id,
           inviteId: gameInvite.inviteId,
         },
+      });
+    } else {
+      socket.emit("respondToInvite", {
+        inviteId: gameInvite.inviteId,
+        accepted,
+        inviterId: gameInvite.inviter.id,
+        inviteeId: currentUser?.id,
+        channelId: sdk?.channelId,
       });
     }
 
