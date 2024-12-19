@@ -1,4 +1,4 @@
-import { GameState } from "@/server/types";
+import { GameState } from "../server/types";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -51,7 +51,7 @@ export function GameBoard({
             disabled={
               cell !== null ||
               gameState.currentPlayer !== currentUserId ||
-              gameState.winner !== undefined ||
+              gameState.winner !== null ||
               gameState.isDraw
             }
             className={`
@@ -65,7 +65,7 @@ export function GameBoard({
                   ? "bg-indigo-500/20 hover:bg-indigo-500/30 border-2 border-indigo-500/30"
                   : "bg-[#1a1b26] border-2 border-white/10"
               }
-              
+              ${gameState.winningLine?.includes(index) ? "bg-green-500/20 border-green-500/30" : ""}
               transition-all duration-200
             `}
           >

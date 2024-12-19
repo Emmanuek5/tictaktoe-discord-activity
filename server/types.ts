@@ -6,6 +6,7 @@ export interface GameState {
     O: string | null;
   };
   winner: string | null;
+  winningLine: number[] | null;
   isDraw: boolean;
   roomId: string;
   isAIGame: boolean;

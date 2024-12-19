@@ -34,13 +34,17 @@ function GameComponent({ mode, onBack }: GameProps) {
 
   const [socket, setSocket] = useState<any>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [participants, setParticipants] = useState<ParticipantsResponse | null>(null);
+  const [participants, setParticipants] = useState<ParticipantsResponse | null>(
+    null
+  );
   const [gameInvite, setGameInvite] = useState<{
     inviter: DiscordParticipant;
     inviteId: string;
   } | null>(null);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
-  const [availablePlayers, setAvailablePlayers] = useState<DiscordParticipant[]>([]);
+  const [availablePlayers, setAvailablePlayers] = useState<
+    DiscordParticipant[]
+  >([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,8 +65,13 @@ function GameComponent({ mode, onBack }: GameProps) {
       }
     };
 
-    sdk.subscribe("ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE", handleParticipantsUpdate);
-    
+    const waitForParticipantsUpdate = async () => {
+      sdk.subscribe(
+        "ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE",
+        handleParticipantsUpdate
+      );
+    };
+
     sdk.commands.getInstanceConnectedParticipants().then((participants) => {
       if (socket && currentUser) {
         socket.emit("updateParticipants", {
@@ -73,8 +82,13 @@ function GameComponent({ mode, onBack }: GameProps) {
       }
     });
 
+    waitForParticipantsUpdate();
+
     return () => {
-      sdk.unsubscribe("ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE", handleParticipantsUpdate);
+      sdk.unsubscribe(
+        "ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE",
+        handleParticipantsUpdate
+      );
     };
   }, [sdk, socket, currentUser, isAIGame]);
 
@@ -108,24 +122,27 @@ function GameComponent({ mode, onBack }: GameProps) {
       });
     });
 
-    newSocket.on("sessionState", ({ participants, gameState, availableForGame }) => {
-      if (isAIGame) {
-        setParticipants({
-          participants: [...participants, AI_PARTICIPANT],
-        });
-      } else {
-        setParticipants({ participants });
-      }
+    newSocket.on(
+      "sessionState",
+      ({ participants, gameState, availableForGame }) => {
+        if (isAIGame) {
+          setParticipants({
+            participants: [...participants, AI_PARTICIPANT],
+          });
+        } else {
+          setParticipants({ participants });
+        }
 
-      if (gameState) setGameState(gameState);
-      setAvailablePlayers(availableForGame || []);
+        if (gameState) setGameState(gameState);
+        setAvailablePlayers(availableForGame || []);
 
-      if (!isAIGame && availableForGame.length === 0) {
-        setSessionError("Waiting for other players to join...");
-      } else {
-        setSessionError(null);
+        if (!isAIGame && availableForGame.length === 0) {
+          setSessionError("Waiting for other players to join...");
+        } else {
+          setSessionError(null);
+        }
       }
-    });
+    );
 
     newSocket.on("gameState", (state: GameState) => {
       setGameState(state);
@@ -233,16 +250,22 @@ function GameComponent({ mode, onBack }: GameProps) {
           <div className="flex flex-col items-center space-y-4">
             <div className="w-24 h-24 rounded-full overflow-hidden">
               <img
-                src={currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : "https://cdn.discordapp.com/embed/avatars/0.png"}
+                src={
+                  currentUser.avatar
+                    ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
+                    : "https://cdn.discordapp.com/embed/avatars/0.png"
+                }
                 alt={currentUser.username}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-medium text-white">{currentUser.username}</h3>
+              <h3 className="text-lg font-medium text-white">
+                {currentUser.username}
+              </h3>
             </div>
           </div>
-          
+
           <div className="space-y-2 mt-6">
             <div className="flex justify-between items-center text-sm">
               <span className="text-white/60">Guild</span>
@@ -301,9 +324,15 @@ function GameComponent({ mode, onBack }: GameProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-white/60">You:</span>
-                      <span className="text-white font-medium">{gameState.players.X === currentUser.id ? "X" : "O"}</span>
+                      <span className="text-white font-medium">
+                        {gameState.players.X === currentUser.id ? "X" : "O"}
+                      </span>
                       <span className="text-white/60">Current Turn:</span>
-                      <span className="text-white font-medium">{gameState.currentPlayer === currentUser.id ? "Your Turn" : "Opponent's Turn"}</span>
+                      <span className="text-white font-medium">
+                        {gameState.currentPlayer === currentUser.id
+                          ? "Your Turn"
+                          : "Opponent's Turn"}
+                      </span>
                     </div>
                   </div>
                   <GameBoard
@@ -316,7 +345,9 @@ function GameComponent({ mode, onBack }: GameProps) {
               ) : (
                 <div className="flex flex-col items-center justify-center h-[500px] bg-[#1a1b26]/50 rounded-xl border border-white/10">
                   {sessionError ? (
-                    <p className="text-red-400/90 text-center">{sessionError}</p>
+                    <p className="text-red-400/90 text-center">
+                      {sessionError}
+                    </p>
                   ) : (
                     <Loader2 className="w-8 h-8 text-white/80 animate-spin" />
                   )}
@@ -329,7 +360,9 @@ function GameComponent({ mode, onBack }: GameProps) {
           <div className="w-80 bg-[#1a1b26]/80 border-l border-white/10 p-6">
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold text-white mb-4">Players</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Players
+                </h2>
                 {participants && (
                   <div className="space-y-3">
                     {participants.participants.map((participant) => (
@@ -339,16 +372,24 @@ function GameComponent({ mode, onBack }: GameProps) {
                       >
                         <div className="w-10 h-10 rounded-full overflow-hidden">
                           <img
-                            src={participant.avatar ? `https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png` : "https://cdn.discordapp.com/embed/avatars/0.png"}
+                            src={
+                              participant.avatar
+                                ? `https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png`
+                                : "https://cdn.discordapp.com/embed/avatars/0.png"
+                            }
                             alt={participant.username}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div>
-                          <div className="text-white font-medium">{participant.username}</div>
+                          <div className="text-white font-medium">
+                            {participant.username}
+                          </div>
                           {gameState?.players && (
                             <div className="text-sm text-white/60">
-                              {gameState.players.X === participant.id ? "X" : "O"}
+                              {gameState.players.X === participant.id
+                                ? "X"
+                                : "O"}
                             </div>
                           )}
                         </div>
@@ -360,7 +401,9 @@ function GameComponent({ mode, onBack }: GameProps) {
 
               {!gameState && !isAIGame && (
                 <div>
-                  <h2 className="text-xl font-semibold text-white mb-4">Available Players</h2>
+                  <h2 className="text-xl font-semibold text-white mb-4">
+                    Available Players
+                  </h2>
                   <PlayerSelect
                     participants={participants}
                     currentUserId={currentUser.id}

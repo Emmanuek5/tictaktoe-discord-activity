@@ -2,21 +2,22 @@ import { GameState, GameMove } from './types';
 
 export function createNewGame(roomId: string): GameState {
   return {
-  board: Array(9).fill(null),
-  currentPlayer: 'X',
-  players: {
-    X: null,
-    O: null
-  },
-  winner: null,
-  isDraw: false,
-  roomId,
-  isAIGame: false,
-  participants: []
-};
+    board: Array(9).fill(null),
+    currentPlayer: 'X',
+    players: {
+      X: null,
+      O: null
+    },
+    winner: null,
+    winningLine: null,
+    isDraw: false,
+    roomId,
+    isAIGame: false,
+    participants: []
+  };
 }
 
-export function checkWinner(board: Array<string | null>): string | null {
+export function checkWinner(board: Array<string | null>): { winner: string | null; winningLine: number[] | null } {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -28,13 +29,14 @@ export function checkWinner(board: Array<string | null>): string | null {
     [2, 4, 6]
   ];
 
-  for (const [a, b, c] of lines) {
+  for (const line of lines) {
+    const [a, b, c] = line;
     if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      return board[a];
+      return { winner: board[a], winningLine: line };
     }
   }
 
-  return null;
+  return { winner: null, winningLine: null };
 }
 
 export function checkDraw(board: Array<string | null>): boolean {
@@ -55,7 +57,7 @@ export function makeMove(gameState: GameState, move: GameMove): GameState {
   const newBoard = [...gameState.board];
   newBoard[move.position] = move.player;
 
-  const winner = checkWinner(newBoard);
+  const { winner, winningLine } = checkWinner(newBoard);
   const isDraw = !winner && checkDraw(newBoard);
 
   return {
@@ -63,6 +65,7 @@ export function makeMove(gameState: GameState, move: GameMove): GameState {
     board: newBoard,
     currentPlayer: move.player === 'X' ? 'O' : 'X',
     winner,
+    winningLine,
     isDraw
   };
 }

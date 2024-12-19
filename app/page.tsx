@@ -9,6 +9,7 @@ import { GameInvite } from "@/components/GameInvite";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Users } from "lucide-react";
 import Game from "@/components/Game";
+import Image from "next/image";
 
 export default function Home() {
   const {
@@ -28,6 +29,7 @@ export default function Home() {
     inviter: any;
     inviteId: string;
   } | null>(null);
+  const [userStats, setUserStats] = useState<any>(null);
 
   // Handle window resize
   useEffect(() => {
@@ -63,6 +65,11 @@ export default function Home() {
       console.log(eventName, args);
     });
 
+    // Request initial stats
+    if (currentUser?.id) {
+      newSocket.emit("requestStats", { userId: currentUser.id });
+    }
+
     return () => {
       if (newSocket) {
         newSocket.disconnect();
@@ -70,7 +77,7 @@ export default function Home() {
     };
   }, [currentUser?.id, sdk?.channelId]);
 
-  // Handle game invites
+  // Handle game invites and stats
   useEffect(() => {
     if (!socket) return;
 
@@ -78,8 +85,13 @@ export default function Home() {
       setGameInvite({ inviter, inviteId });
     });
 
+    socket.on("userStats", (stats: any) => {
+      setUserStats(stats);
+    });
+
     return () => {
       socket.off("gameInvite");
+      socket.off("userStats");
     };
   }, [socket]);
 
@@ -126,39 +138,139 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="h-full flex items-center justify-center"
+            className="h-full flex"
           >
-            <div className="max-w-md w-full space-y-12 p-8">
-              <div className="text-center space-y-4">
-                <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
-                  Tic Tac Toe
-                </h1>
-                <p className="text-lg text-white/60">
-                  Challenge friends or test your skills against AI
-                </p>
-              </div>
+            {/* Left sidebar with user stats */}
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="w-80 p-6 border-r border-white/10"
+            >
+              <div className="space-y-6">
+                {/* User Profile */}
+                <div className="flex flex-col items-center space-y-4">
+                  <Image
+                    src={
+                      currentUser?.avatar
+                        ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
+                        : "https://cdn.discordapp.com/embed/avatars/0.png"
+                    }
+                    width={80}
+                    height={80}
+                    alt="User Avatar"
+                    className="rounded-full border-2 border-white/20"
+                  />
+                  <div className="text-center">
+                    <h2 className="font-semibold text-lg">
+                      {currentUser.global_name || currentUser.username}
+                    </h2>
+                    <p className="text-sm text-white/60">
+                      {currentGuild?.name} • {currentChannel?.name}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="space-y-4">
-                <Button
-                  size="lg"
-                  className="w-full h-16 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
-                  onClick={() => setGameMode("pvp")}
-                >
-                  <Users className="w-6 h-6 mr-3" />
-                  Play with Friends
-                </Button>
-                <Button
-                  size="lg"
-                  className="w-full h-16 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
-                  onClick={() => setGameMode("ai")}
-                >
-                  <Bot className="w-6 h-6 mr-3" />
-                  Play against AI
-                </Button>
-              </div>
+                {/* Stats */}
+                {userStats && (
+                  <div className="space-y-4">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h3 className="text-sm font-medium mb-3 text-white/70">
+                        Overall Stats
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">{userStats.totalGames}</p>
+                          <p className="text-xs text-white/60">Games Played</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">
+                            {((userStats.wins / userStats.totalGames) * 100 || 0).toFixed(1)}%
+                          </p>
+                          <p className="text-xs text-white/60">Win Rate</p>
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="text-center text-sm text-white/40">
-                Connected as {currentUser.username}
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h3 className="text-sm font-medium mb-3 text-white/70">
+                        Game Results
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-green-400">
+                            {userStats.wins}
+                          </p>
+                          <p className="text-xs text-white/60">Wins</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-red-400">
+                            {userStats.losses}
+                          </p>
+                          <p className="text-xs text-white/60">Losses</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold text-yellow-400">
+                            {userStats.draws}
+                          </p>
+                          <p className="text-xs text-white/60">Draws</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h3 className="text-sm font-medium mb-3 text-white/70">
+                        AI Games
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <p className="text-xl font-bold">
+                            {userStats.aiGamesPlayed}
+                          </p>
+                          <p className="text-xs text-white/60">Games vs AI</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xl font-bold">
+                            {((userStats.aiWins / userStats.aiGamesPlayed) * 100 || 0).toFixed(1)}%
+                          </p>
+                          <p className="text-xs text-white/60">AI Win Rate</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Main content */}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="max-w-md w-full space-y-12 p-8">
+                <div className="text-center space-y-4">
+                  <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
+                    Tic Tac Toe
+                  </h1>
+                  <p className="text-lg text-white/60">
+                    Challenge friends or test your skills against AI
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <Button
+                    size="lg"
+                    className="w-full h-16 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
+                    onClick={() => setGameMode("pvp")}
+                  >
+                    <Users className="w-6 h-6 mr-3" />
+                    Play with Friends
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="w-full h-16 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
+                    onClick={() => setGameMode("ai")}
+                  >
+                    <Bot className="w-6 h-6 mr-3" />
+                    Play against AI
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>
