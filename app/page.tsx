@@ -121,6 +121,14 @@ export default function Home() {
 
     if (accepted) {
       setGameMode("pvp");
+      // Re-initialize the session for PvP game
+      socket.emit("initializeSession", {
+        channelId: sdk?.channelId,
+        userId: currentUser?.id,
+        username: currentUser?.username,
+        isAIGame: false,
+        inviterId: gameInvite.inviter.id,
+      });
     }
 
     setGameInvite(null);

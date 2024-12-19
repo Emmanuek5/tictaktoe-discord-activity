@@ -163,6 +163,14 @@ function GameComponent({ mode, onBack }: GameProps) {
     newSocket.on("inviteResponse", ({ accepted, inviterId }) => {
       if (accepted) {
         setWaitingForResponse(false);
+        // Initialize new game session when invite is accepted
+        newSocket.emit("initializeSession", {
+          channelId: sdk?.channelId,
+          userId: currentUser?.id,
+          username: currentUser?.username,
+          isAIGame: false,
+          inviterId: inviterId,
+        });
       } else {
         setWaitingForResponse(false);
         alert("Player declined your invitation");
