@@ -229,6 +229,24 @@ export async function updateUserStats(stats: Partial<UserStats> & { userId: stri
   }
 }
 
+export async function initUserStats(userId: string, username: string): Promise<void> {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `INSERT INTO user_stats (
+        user_id, username, wins, losses, draws, total_games, ai_games_played, ai_wins
+      )
+      VALUES ($1, $2, 0, 0, 0, 0, 0, 0)
+      ON CONFLICT (user_id) DO UPDATE SET
+        username = EXCLUDED.username,
+        updated_at = CURRENT_TIMESTAMP`,
+      [userId, username]
+    );
+  } finally {
+    client.release();
+  }
+}
+
 export async function getUserStats(userId: string): Promise<UserStats | null> {
   const client = await pool.connect();
   try {

@@ -2,7 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { initDB, updateUserStats, getUserStats, logGameCompletion } from './db/postgres';
+import { initDB, updateUserStats, getUserStats, logGameCompletion, initUserStats } from './db/postgres';
 import { initRedis, saveGameState, getGameState, deleteGameState } from './db/redis';
 import { createNewGame, makeMove } from './game';
 import { GameMove, JoinGamePayload, GameState } from './types';
@@ -75,15 +75,20 @@ io.on('connection', (socket) => {
       activeSessions.set(channelId, session);
     }
 
+    // Initialize user stats in the database
+    try {
+      await initUserStats(userId, username);
+    } catch (error) {
+      console.error('Error initializing user stats:', error);
+    }
+
     // Update or add the participant
     const existingParticipant = session.participants.find(p => p.id === userId);
     if (existingParticipant) {
-      // Update existing participant's socket ID and other details
       existingParticipant.socketId = socket.id;
       existingParticipant.avatar = socket.handshake.query.avatar as string;
       existingParticipant.global_name = socket.handshake.query.global_name as string;
     } else {
-      // Add new participant
       session.participants.push({
         id: userId,
         username,
@@ -96,15 +101,13 @@ io.on('connection', (socket) => {
     // Join the socket to the channel room
     socket.join(channelId);
 
-    // If there's an existing game state and this user is part of it, restore it
-    if (session.gameState) {
-      const { players } = session.gameState;
-      if (players.X === userId || players.O === userId) {
-        socket.emit('gameState', session.gameState);
+    // For AI games, create a new game state
+    if (isAIGame) {
+      // Clear any existing game state
+      if (session.gameState) {
+        await deleteGameState(channelId);
       }
-    }
-    // For AI games, create a new game state if none exists
-    else if (isAIGame) {
+      
       const gameState = {
         ...createNewGame(channelId),
         isAIGame: true,
@@ -116,6 +119,13 @@ io.on('connection', (socket) => {
       session.gameState = gameState;
       await saveGameState(gameState);
       io.to(channelId).emit('gameState', gameState);
+    }
+    // If there's an existing game state and this user is part of it, restore it
+    else if (session.gameState) {
+      const { players } = session.gameState;
+      if (players.X === userId || players.O === userId) {
+        socket.emit('gameState', session.gameState);
+      }
     }
 
     // Emit the current session state
@@ -179,14 +189,27 @@ io.on('connection', (socket) => {
     const session = activeSessions.get(channelId);
     if (!session) return;
 
+    const previousPlayers = session.gameState?.players;
+
     // Create new game state
     const gameState = {
       ...createNewGame(channelId),
       isAIGame,
-      players: {
-        X: userId,
-        O: isAIGame ? 'AI' : null
-      }
+      players: isAIGame 
+        ? {
+            X: userId,
+            O: 'AI'
+          }
+        : previousPlayers 
+          ? {
+              // Swap X and O players for the next game
+              X: previousPlayers.O,
+              O: previousPlayers.X
+            }
+          : {
+              X: userId,
+              O: null
+            }
     };
 
     session.gameState = gameState;
@@ -336,11 +359,16 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('respondToInvite', ({ inviteId, accepted, inviterId, inviteeId, channelId }) => {
+  socket.on('respondToInvite', async ({ inviteId, accepted, inviterId, inviteeId, channelId }) => {
     const session = activeSessions.get(channelId);
     if (!session) return;
 
     if (accepted) {
+      // Clear any existing game state
+      if (session.gameState) {
+        await deleteGameState(channelId);
+      }
+
       // Create new game state
       const gameState = {
         ...createNewGame(channelId),
@@ -352,7 +380,7 @@ io.on('connection', (socket) => {
       };
 
       session.gameState = gameState;
-      saveGameState(gameState);
+      await saveGameState(gameState);
       io.to(channelId).emit('gameState', gameState);
     }
 

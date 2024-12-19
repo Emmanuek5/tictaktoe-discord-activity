@@ -77,6 +77,8 @@ export default function Home() {
 
     return () => {
       if (newSocket) {
+        console.log("disconnecting socket");
+
         newSocket.disconnect();
       }
     };
