@@ -329,7 +329,7 @@ function GameComponent({ mode, onBack }: GameProps) {
                       </span>
                       <span className="text-white/60">Current Turn:</span>
                       <span className="text-white font-medium">
-                        {gameState.currentPlayer === currentUser.id
+                        {gameState.players[gameState.currentPlayer as keyof typeof gameState.players] === currentUser.id
                           ? "Your Turn"
                           : "Opponent's Turn"}
                       </span>

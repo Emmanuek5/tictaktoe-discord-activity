@@ -17,8 +17,7 @@ export function GameBoard({
 }: GameBoardProps) {
   const isGameOver = !!gameState.winner || gameState.isDraw;
   const isPlayerTurn =
-    gameState.currentPlayer ===
-    (gameState.players.X === currentUserId ? "X" : "O");
+    gameState.players[gameState.currentPlayer as keyof typeof gameState.players] === currentUserId;
   const playerSymbol = gameState.players.X === currentUserId ? "X" : "O";
 
   const getStatusMessage = () => {
@@ -50,7 +49,7 @@ export function GameBoard({
             onClick={() => handleCellClick(index)}
             disabled={
               cell !== null ||
-              gameState.currentPlayer !== currentUserId ||
+              gameState.players[gameState.currentPlayer as keyof typeof gameState.players] !== currentUserId ||
               gameState.winner !== null ||
               gameState.isDraw
             }
@@ -59,7 +58,7 @@ export function GameBoard({
               text-4xl font-bold rounded-lg
               ${
                 cell === null &&
-                gameState.currentPlayer === currentUserId &&
+                gameState.players[gameState.currentPlayer as keyof typeof gameState.players] === currentUserId &&
                 !gameState.winner &&
                 !gameState.isDraw
                   ? "bg-indigo-500/20 hover:bg-indigo-500/30 border-2 border-indigo-500/30"
