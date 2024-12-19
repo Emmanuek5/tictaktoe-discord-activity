@@ -46,7 +46,12 @@ export default function Home() {
 
   // Handle socket connection
   useEffect(() => {
-    if (!currentUser?.id || !sdk?.channelId) return;
+    console.log("Initializing socket connection");
+
+    if (!currentUser?.id || !sdk?.channelId) {
+      console.log("Missing user ID or channel ID");
+      return;
+    }
 
     const newSocket = io("", {
       path: "/.proxy/socket",
