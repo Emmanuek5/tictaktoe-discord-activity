@@ -263,7 +263,7 @@ export default function Home() {
                 <div className="text-center space-y-4">
                   <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
                     Tic Tac{" "}
-                    <span className="text-bold bg-transparent text-clip bg-gradient-to-r from-pink-500 to-rose-500">
+                    <span className="text-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">
                       Showdown
                     </span>
                   </h1>
