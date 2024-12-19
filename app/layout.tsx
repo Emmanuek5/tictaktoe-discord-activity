@@ -22,13 +22,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <meta
-          httpEquiv="Content-Security-Policy"
-          content="default-src 'self'; connect-src 'self' wss://*.discordsays.com ws://*.discordsays.com https://*.discordsays.com http://*.discordsays.com https://980117022765613056.discordsays.com https://discord.com; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com data:;"
-        />
-      </head>
-
       <body
         className={`${robotoFlex.className} antialiased bg-gradient-to-br from-slate-900 to-slate-800 tracking-tight`}
       >
