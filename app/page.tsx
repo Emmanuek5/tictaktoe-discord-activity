@@ -96,13 +96,7 @@ export default function Home() {
     socket.on("userStats", (stats: any) => {
       setUserStats(stats);
 
-      const userStatsInterval = setInterval(() => {
-        socket.emit("requestStats", { userId: currentUser?.id });
-      }, 500000); // 5 minutes
-
-      return () => {
-        clearInterval(userStatsInterval);
-      };
+      return () => {};
     });
   }, [socket]);
 
@@ -135,6 +129,11 @@ export default function Home() {
       </div>
     );
   }
+
+  const handleGameModeChange = (mode: "menu" | "ai" | "pvp") => {
+    socket?.emit("requestStats", { userId: currentUser.id });
+    setGameMode(mode);
+  };
 
   return (
     <div className="h-screen bg-[#0f1117] text-white overflow-hidden">
@@ -276,7 +275,7 @@ export default function Home() {
                   <Button
                     size="lg"
                     className="w-full h-16 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
-                    onClick={() => setGameMode("pvp")}
+                    onClick={() => handleGameModeChange("pvp")}
                   >
                     <Users className="w-6 h-6 mr-3" />
                     Play with Friends
@@ -284,7 +283,7 @@ export default function Home() {
                   <Button
                     size="lg"
                     className="w-full h-16 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
-                    onClick={() => setGameMode("ai")}
+                    onClick={() => handleGameModeChange("ai")}
                   >
                     <Bot className="w-6 h-6 mr-3" />
                     Play against AI
@@ -303,7 +302,7 @@ export default function Home() {
           >
             <Game
               mode={gameMode === "ai" ? "ai" : "pvp"}
-              onBack={() => setGameMode("menu")}
+              onBack={() => handleGameModeChange("menu")}
             />
           </motion.div>
         )}
