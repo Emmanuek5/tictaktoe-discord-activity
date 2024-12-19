@@ -1,5 +1,6 @@
 import { GameState } from "@/server/types";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -34,34 +35,59 @@ export function GameBoard({
     return isPlayerTurn ? "🎮 Your Turn!" : "⏳ Opponent's Turn";
   };
 
+  const handleCellClick = (index: number) => {
+    onMove(index);
+  };
+
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="text-xl font-bold text-white">{getStatusMessage()}</div>
 
-      <div className="grid grid-cols-3 gap-2 max-w-[300px] w-full">
+      <div className="grid grid-cols-3 gap-4">
         {gameState.board.map((cell, index) => (
           <button
             key={index}
-            onClick={() => onMove(index)}
+            onClick={() => handleCellClick(index)}
             disabled={
-              !isPlayerTurn ||
-              !!cell ||
-              gameState.winner === undefined ||
+              cell !== null ||
+              gameState.currentPlayer !== currentUserId ||
+              gameState.winner !== undefined ||
               gameState.isDraw
             }
-            className={cn(
-              "aspect-square text-4xl font-bold flex items-center justify-center",
-              "transition-all duration-200",
-              "bg-game-blue-dark/50 hover:bg-game-blue-dark disabled:hover:bg-game-blue-dark/50",
-              "border-2 border-transparent",
-              isPlayerTurn &&
-                !cell &&
-                "border-game-purple/50 hover:border-game-purple",
-              cell === "X" && "text-game-purple",
-              cell === "O" && "text-game-blue-light"
-            )}
+            className={`
+              aspect-square flex items-center justify-center
+              text-4xl font-bold rounded-lg
+              ${
+                cell === null &&
+                gameState.currentPlayer === currentUserId &&
+                !gameState.winner &&
+                !gameState.isDraw
+                  ? "bg-indigo-500/20 hover:bg-indigo-500/30 border-2 border-indigo-500/30"
+                  : "bg-[#1a1b26] border-2 border-white/10"
+              }
+              
+              transition-all duration-200
+            `}
           >
-            {cell}
+            {cell === "X" ? (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-indigo-400"
+              >
+                X
+              </motion.span>
+            ) : cell === "O" ? (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-violet-400"
+              >
+                O
+              </motion.span>
+            ) : (
+              <span className="text-transparent">·</span>
+            )}
           </button>
         ))}
       </div>

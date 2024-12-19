@@ -225,143 +225,173 @@ function GameComponent({ mode, onBack }: GameProps) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="h-screen w-full bg-gradient-to-br from-slate-900 to-slate-800 text-white"
-    >
-      <div className="w-full backdrop-blur-sm bg-black/20">
+    <div className="flex h-screen">
+      {/* Left Sidebar - Player Profile */}
+      <div className="w-80 bg-[#1a1b26]/80 p-6 border-r border-white/10">
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">Player Profile</h2>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-24 h-24 rounded-full overflow-hidden">
+              <img
+                src={currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png` : "https://cdn.discordapp.com/embed/avatars/0.png"}
+                alt={currentUser.username}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-white">{currentUser.username}</h3>
+            </div>
+          </div>
+          
+          <div className="space-y-2 mt-6">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-white/60">Guild</span>
+              <span className="text-white">Advanced Support Server</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-white/60">Channel</span>
+              <span className="text-white flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-400"></span>
+                general
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col bg-[#0f1117]">
         {/* Header */}
-        <motion.div
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="h-16 bg-[#1a1b26]/80 border-b border-white/10 flex items-center justify-between px-6">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onBack}
-            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+            className="text-white/80 hover:text-white"
           >
-            <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700">
-              <MoveLeft className="w-5 h-5" />
-              <span>Back</span>
-            </Button>
-          </motion.button>
-          <div className="flex items-center gap-2 text-white/80">
+            <MoveLeft className="w-5 h-5 mr-2" />
+            Back
+          </Button>
+          <div className="flex items-center gap-2">
             {isAIGame ? (
-              <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5" />
-                <span>AI Mode</span>
-              </div>
+              <Button variant="ghost" size="sm" className="text-white/80">
+                <Bot className="w-5 h-5 mr-2" />
+                AI Mode
+              </Button>
             ) : (
-              <div className="flex items-center gap-2 text-white/80">
-                <Users className="w-5 h-5" />
-                <span>Multiplayer Mode</span>
-              </div>
+              <Button variant="ghost" size="sm" className="text-white/80">
+                <Users className="w-5 h-5 mr-2" />
+                Multiplayer Mode
+              </Button>
             )}
           </div>
-        </motion.div>
+        </div>
 
-        <div className="container mx-auto p-4">
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Left Side - Game Board */}
-            <motion.div
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="flex-1"
-            >
-              <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10">
-                {gameState ? (
+        {/* Game Area */}
+        <div className="flex-1 flex">
+          {/* Game Board */}
+          <div className="flex-1 p-8">
+            <div className="max-w-2xl mx-auto">
+              {gameState ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/60">🎮</span>
+                      <span className="text-white font-medium">Your Turn!</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/60">You:</span>
+                      <span className="text-white font-medium">{gameState.players.X === currentUser.id ? "X" : "O"}</span>
+                      <span className="text-white/60">Current Turn:</span>
+                      <span className="text-white font-medium">{gameState.currentPlayer === currentUser.id ? "Your Turn" : "Opponent's Turn"}</span>
+                    </div>
+                  </div>
                   <GameBoard
                     gameState={gameState}
                     currentUserId={currentUser.id}
                     onMove={handleMove}
                     onReset={handleReset}
                   />
-                ) : (
-                  <div className="flex flex-col items-center justify-center space-y-4 p-8">
-                    {sessionError ? (
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-red-400/90 text-center"
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[500px] bg-[#1a1b26]/50 rounded-xl border border-white/10">
+                  {sessionError ? (
+                    <p className="text-red-400/90 text-center">{sessionError}</p>
+                  ) : (
+                    <Loader2 className="w-8 h-8 text-white/80 animate-spin" />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Sidebar - Players */}
+          <div className="w-80 bg-[#1a1b26]/80 border-l border-white/10 p-6">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-white mb-4">Players</h2>
+                {participants && (
+                  <div className="space-y-3">
+                    {participants.participants.map((participant) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5"
                       >
-                        {sessionError}
-                      </motion.p>
-                    ) : (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          duration: 1,
-                          repeat: Infinity,
-                          ease: "linear",
-                        }}
-                      >
-                        <Loader2 className="w-8 h-8 text-white/80" />
-                      </motion.div>
-                    )}
+                        <div className="w-10 h-10 rounded-full overflow-hidden">
+                          <img
+                            src={participant.avatar ? `https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png` : "https://cdn.discordapp.com/embed/avatars/0.png"}
+                            alt={participant.username}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">{participant.username}</div>
+                          {gameState?.players && (
+                            <div className="text-sm text-white/60">
+                              {gameState.players.X === participant.id ? "X" : "O"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            </motion.div>
 
-            {/* Right Side - Players */}
-            <motion.div
-              initial={{ x: 50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="w-full md:w-80"
-            >
-              <div className="space-y-4">
-                {/* Participants List */}
-                <div className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10">
-                  <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-white/10">
-                    Players
-                  </h2>
-                  {participants && (
-                    <ParticipantList
-                      participants={participants}
-                      currentUserId={currentUser.id}
-                      gameState={gameState}
-                    />
+              {!gameState && !isAIGame && (
+                <div>
+                  <h2 className="text-xl font-semibold text-white mb-4">Available Players</h2>
+                  <PlayerSelect
+                    participants={participants}
+                    currentUserId={currentUser.id}
+                    onInvitePlayer={handleInvitePlayer}
+                  />
+                  {waitingForResponse && (
+                    <p className="text-center text-sm text-white/60 mt-2">
+                      Waiting for response...
+                    </p>
                   )}
                 </div>
-
-                {/* Player Selection */}
-                {!gameState && !isAIGame && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/5 rounded-xl p-4 backdrop-blur-sm shadow-xl border border-white/10"
-                  >
-                    <h2 className="text-xl font-semibold mb-4 pb-2 border-b border-white/10">
-                      Available Players
-                    </h2>
-                    <PlayerSelect
-                      participants={participants}
-                      currentUserId={currentUser.id}
-                      onInvitePlayer={handleInvitePlayer}
-                    />
-                    {waitingForResponse && (
-                      <p className="text-center text-sm text-white/60 mt-2">
-                        Waiting for response...
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Game Invite Modal */}
-        <AnimatePresence>
-          {gameInvite && (
+      {/* Game Invite Modal */}
+      <AnimatePresence>
+        {gameInvite && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-[#1a1b26] p-6 rounded-xl border border-white/10 shadow-xl"
             >
               <GameInvite
                 inviter={gameInvite.inviter}
@@ -369,10 +399,10 @@ function GameComponent({ mode, onBack }: GameProps) {
                 onDecline={() => handleInviteResponse(false)}
               />
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
