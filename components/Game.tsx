@@ -242,10 +242,11 @@ function GameComponent({ mode, onBack }: GameProps) {
 
   if (!participants || !currentUser) {
     return (
-      <div className="min-h-screen bg-[#0f1117] p-4 md:p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center h-screen">
-            <Loader2 className="w-8 h-8 animate-spin text-white/60" />
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4">
+        <div className="bg-white/5 p-8 rounded-xl shadow-2xl border border-white/10 flex items-center gap-6">
+          <Loader2 className="h-12 w-12 text-white/80 animate-spin" />
+          <div className="text-white/90 text-2xl font-bold tracking-wide">
+            Loading game...
           </div>
         </div>
       </div>
@@ -253,102 +254,183 @@ function GameComponent({ mode, onBack }: GameProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1117] p-4 md:p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            className="text-white/60 hover:text-white"
-            onClick={onBack}
-          >
-            <MoveLeft className="w-5 h-5 mr-2" />
-            Back to Menu
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="text-white/60 text-sm md:text-base">
-              {isAIGame ? "Playing vs AI" : "PvP Mode"}
+    <div className="flex h-screen">
+      {/* Left Sidebar - Player Profile */}
+      <div className="w-80 bg-[#1a1b26]/80 p-6 border-r border-white/10">
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-white">Player Profile</h2>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-24 h-24 rounded-full overflow-hidden">
+              <img
+                src={
+                  currentUser.avatar
+                    ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
+                    : "https://cdn.discordapp.com/embed/avatars/0.png"
+                }
+                alt={currentUser.username}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-white">
+                {currentUser.username}
+              </h3>
+            </div>
+          </div>
+
+          <div className="space-y-2 mt-6">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-white/60">Guild</span>
+              <span className="text-white">Advanced Support Server</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-white/60">Channel</span>
+              <span className="text-white flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-400"></span>
+                general
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Main Game Area */}
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Game Board Section */}
-          <div className="flex-1 flex flex-col items-center justify-center">
-            {gameState ? (
-              <GameBoard
-                gameState={gameState}
-                currentUserId={currentUser.id}
-                onMove={handleMove}
-                onReset={handleReset}
-              />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col bg-[#0f1117]">
+        {/* Header */}
+        <div className="h-16 bg-[#1a1b26]/80 border-b border-white/10 flex items-center justify-between px-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="text-white/80 hover:text-white"
+          >
+            <MoveLeft className="w-5 h-5 mr-2" />
+            Back
+          </Button>
+          <div className="flex items-center gap-2">
+            {isAIGame ? (
+              <Button variant="ghost" size="sm" className="text-white/80">
+                <Bot className="w-5 h-5 mr-2" />
+                AI Mode
+              </Button>
             ) : (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-white/60" />
-              </div>
+              <Button variant="ghost" size="sm" className="text-white/80">
+                <Users className="w-5 h-5 mr-2" />
+                Multiplayer Mode
+              </Button>
             )}
           </div>
+        </div>
 
-          {/* Participants Section */}
-          <div className="w-full lg:w-80 space-y-6">
-            <div className="bg-white/5 rounded-lg p-4">
-              <h2 className="text-lg md:text-xl font-semibold text-white mb-4">
-                Players
-              </h2>
-              {participants && (
-                <div className="space-y-3">
-                  {participants.participants.map((participant) => (
-                    <div
-                      key={participant.id}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-white/5"
-                    >
-                      <div className="flex-shrink-0">
-                        <img
-                          src={
-                            participant.avatar
-                              ? `https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png`
-                              : "https://cdn.discordapp.com/embed/avatars/0.png"
-                          }
-                          alt={participant.username}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <div className="truncate text-sm font-medium text-white">
-                            {participant.global_name || participant.username}
+        {/* Game Area */}
+        <div className="flex-1 flex">
+          {/* Game Board */}
+          <div className="flex-1 p-8">
+            <div className="max-w-2xl mx-auto">
+              {gameState ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/60">🎮</span>
+                      <span className="text-white font-medium">Your Turn!</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/60">You:</span>
+                      <span className="text-white font-medium">
+                        {gameState.players.X === currentUser.id ? "X" : "O"}
+                      </span>
+                      <span className="text-white/60">Current Turn:</span>
+                      <span className="text-white font-medium">
+                        {gameState.players[
+                          gameState.currentPlayer as keyof typeof gameState.players
+                        ] === currentUser.id
+                          ? "Your Turn"
+                          : "Opponent's Turn"}
+                      </span>
+                    </div>
+                  </div>
+                  <GameBoard
+                    gameState={gameState}
+                    currentUserId={currentUser.id}
+                    onMove={handleMove}
+                    onReset={handleReset}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[500px] bg-[#1a1b26]/50 rounded-xl border border-white/10">
+                  {sessionError ? (
+                    <p className="text-red-400/90 text-center">
+                      {sessionError}
+                    </p>
+                  ) : (
+                    <Loader2 className="w-8 h-8 text-white/80 animate-spin" />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Sidebar - Players */}
+          <div className="w-80 bg-[#1a1b26]/80 border-l border-white/10 p-6">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-white mb-4">
+                  Players
+                </h2>
+                {participants && (
+                  <div className="space-y-3">
+                    {participants.participants.map((participant) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white/5"
+                      >
+                        <div className="w-10 h-10 rounded-full overflow-hidden">
+                          <img
+                            src={
+                              participant.avatar
+                                ? `https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png`
+                                : "https://cdn.discordapp.com/embed/avatars/0.png"
+                            }
+                            alt={participant.username}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">
+                            {participant.username}
                           </div>
                           {gameState?.players && (
-                            <div className="text-sm text-white/60 ml-2">
-                              {gameState.players.X === participant.id ? "X" : "O"}
+                            <div className="text-sm text-white/60">
+                              {gameState.players.X === participant.id
+                                ? "X"
+                                : "O"}
                             </div>
                           )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {!gameState && !isAIGame && (
+                <div>
+                  <h2 className="text-xl font-semibold text-white mb-4">
+                    Available Players
+                  </h2>
+                  <PlayerSelect
+                    participants={participants}
+                    currentUserId={currentUser.id}
+                    onInvitePlayer={handleInvitePlayer}
+                  />
+                  {waitingForResponse && (
+                    <p className="text-center text-sm text-white/60 mt-2">
+                      Waiting for response...
+                    </p>
+                  )}
                 </div>
               )}
             </div>
-
-            {!gameState && !isAIGame && (
-              <div className="bg-white/5 rounded-lg p-4">
-                <h2 className="text-lg md:text-xl font-semibold text-white mb-4">
-                  Available Players
-                </h2>
-                <PlayerSelect
-                  participants={participants}
-                  currentUserId={currentUser.id}
-                  onInvitePlayer={handleInvitePlayer}
-                />
-                {waitingForResponse && (
-                  <p className="text-center text-sm text-white/60 mt-2">
-                    Waiting for response...
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
