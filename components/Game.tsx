@@ -8,7 +8,6 @@ import { GameBoard } from "@/components/GameBoard";
 import { ParticipantList } from "@/components/ParticipantList";
 import { PlayerSelect } from "@/components/PlayerSelect";
 import { GameInvite } from "@/components/GameInvite";
-import { useSearchParams, useRouter } from "next/navigation";
 import { useDiscordContext } from "@/contexts/DiscordContext";
 import { MoveLeft, Bot, Loader2, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -24,31 +23,29 @@ const AI_PARTICIPANT: DiscordParticipant = {
   global_name: "🤖 AI Opponent",
 };
 
-function GamePage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [isAIGame, setIsAIGame] = useState(false);
+interface GameProps {
+  mode: "ai" | "pvp";
+  onBack: () => void;
+}
+
+function GameComponent({ mode, onBack }: GameProps) {
+  const [isAIGame, setIsAIGame] = useState(mode === "ai");
   const { currentUser, sdk } = useDiscordContext();
 
   const [socket, setSocket] = useState<any>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [participants, setParticipants] = useState<ParticipantsResponse | null>(
-    null
-  );
+  const [participants, setParticipants] = useState<ParticipantsResponse | null>(null);
   const [gameInvite, setGameInvite] = useState<{
     inviter: DiscordParticipant;
     inviteId: string;
   } | null>(null);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
-  const [availablePlayers, setAvailablePlayers] = useState<
-    DiscordParticipant[]
-  >([]);
+  const [availablePlayers, setAvailablePlayers] = useState<DiscordParticipant[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
-    const mode = searchParams.get("mode");
     setIsAIGame(mode === "ai");
-  }, [searchParams]);
+  }, [mode]);
 
   useEffect(() => {
     if (!sdk) return;
@@ -64,15 +61,8 @@ function GamePage() {
       }
     };
 
-    const waitForParticipants = async () => {
-      sdk.subscribe(
-        "ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE",
-        handleParticipantsUpdate
-      );
-    };
-
-    waitForParticipants();
-
+    sdk.subscribe("ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE", handleParticipantsUpdate);
+    
     sdk.commands.getInstanceConnectedParticipants().then((participants) => {
       if (socket && currentUser) {
         socket.emit("updateParticipants", {
@@ -84,17 +74,12 @@ function GamePage() {
     });
 
     return () => {
-      sdk.unsubscribe(
-        "ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE",
-        handleParticipantsUpdate
-      );
+      sdk.unsubscribe("ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE", handleParticipantsUpdate);
     };
   }, [sdk, socket, currentUser, isAIGame]);
 
   useEffect(() => {
-    if (!currentUser?.id || !sdk?.channelId) {
-      return;
-    }
+    if (!currentUser?.id || !sdk?.channelId) return;
 
     const newSocket = io("", {
       path: "/.proxy/socket",
@@ -106,9 +91,9 @@ function GamePage() {
       },
       timeout: 5000,
     });
+
     setSocket(newSocket);
 
-    //lets log all events
     newSocket.onAny((eventName, ...args) => {
       console.log(eventName, args);
     });
@@ -123,27 +108,24 @@ function GamePage() {
       });
     });
 
-    newSocket.on(
-      "sessionState",
-      ({ participants, gameState, availableForGame }) => {
-        if (isAIGame) {
-          setParticipants({
-            participants: [...participants, AI_PARTICIPANT],
-          });
-        } else {
-          setParticipants({ participants });
-        }
-
-        if (gameState) setGameState(gameState);
-        setAvailablePlayers(availableForGame || []);
-
-        if (!isAIGame && availableForGame.length === 0) {
-          setSessionError("Waiting for other players to join...");
-        } else {
-          setSessionError(null);
-        }
+    newSocket.on("sessionState", ({ participants, gameState, availableForGame }) => {
+      if (isAIGame) {
+        setParticipants({
+          participants: [...participants, AI_PARTICIPANT],
+        });
+      } else {
+        setParticipants({ participants });
       }
-    );
+
+      if (gameState) setGameState(gameState);
+      setAvailablePlayers(availableForGame || []);
+
+      if (!isAIGame && availableForGame.length === 0) {
+        setSessionError("Waiting for other players to join...");
+      } else {
+        setSessionError(null);
+      }
+    });
 
     newSocket.on("gameState", (state: GameState) => {
       setGameState(state);
@@ -258,12 +240,12 @@ function GamePage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => router.push("/")}
+            onClick={onBack}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
           >
             <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700">
               <MoveLeft className="w-5 h-5" />
-              <span>Back</span>{" "}
+              <span>Back</span>
             </Button>
           </motion.button>
           <div className="flex items-center gap-2 text-white/80">
@@ -394,10 +376,10 @@ function GamePage() {
   );
 }
 
-export default function Game() {
+export default function Game({ mode, onBack }: GameProps) {
   return (
     <Suspense>
-      <GamePage />
+      <GameComponent mode={mode} onBack={onBack} />
     </Suspense>
   );
 }

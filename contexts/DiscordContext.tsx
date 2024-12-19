@@ -70,6 +70,7 @@ export function DiscordProvider({ clientId, children }: DiscordProviderProps) {
   // Initialize SDK
   useEffect(() => {
     const initializeSdk = async () => {
+      if (sdk) return;
       try {
         const sdkInstance = new DiscordSDK(clientId);
         await sdkInstance.ready();
