@@ -87,12 +87,15 @@ export default function Home() {
 
     socket.on("userStats", (stats: any) => {
       setUserStats(stats);
-    });
 
-    return () => {
-      socket.off("gameInvite");
-      socket.off("userStats");
-    };
+      const userStatsInterval = setInterval(() => {
+        socket.emit("requestStats", { userId: currentUser?.id });
+      }, 10000);
+
+      return () => {
+        clearInterval(userStatsInterval);
+      };
+    });
   }, [socket]);
 
   const handleInviteResponse = async (accepted: boolean) => {
@@ -179,12 +182,17 @@ export default function Home() {
                       </h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center">
-                          <p className="text-2xl font-bold">{userStats.totalGames}</p>
+                          <p className="text-2xl font-bold">
+                            {userStats.totalGames}
+                          </p>
                           <p className="text-xs text-white/60">Games Played</p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold">
-                            {((userStats.wins / userStats.totalGames) * 100 || 0).toFixed(1)}%
+                            {(
+                              (userStats.wins / userStats.totalGames) * 100 || 0
+                            ).toFixed(1)}
+                            %
                           </p>
                           <p className="text-xs text-white/60">Win Rate</p>
                         </div>
@@ -230,7 +238,11 @@ export default function Home() {
                         </div>
                         <div className="text-center">
                           <p className="text-xl font-bold">
-                            {((userStats.aiWins / userStats.aiGamesPlayed) * 100 || 0).toFixed(1)}%
+                            {(
+                              (userStats.aiWins / userStats.aiGamesPlayed) *
+                                100 || 0
+                            ).toFixed(1)}
+                            %
                           </p>
                           <p className="text-xs text-white/60">AI Win Rate</p>
                         </div>

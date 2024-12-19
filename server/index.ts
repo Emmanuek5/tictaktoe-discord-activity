@@ -37,8 +37,15 @@ const activeSessions = new Map<string, {
     username: string;
     avatar?: string;
     global_name?: string;
+    socketId?: string;
   }>;
   gameState: GameState | null;
+}>();
+
+// Track socket to user ID mappings
+const socketToUser = new Map<string, {
+  userId: string;
+  channelId: string;
 }>();
 
 // Initialize databases
@@ -55,13 +62,12 @@ io.on('connection', (socket) => {
 
   socket.on("initializeSession", async ({ channelId, userId, username, isAIGame }) => {
     userChannelId = channelId;
+    socketToUser.set(socket.id, { userId, channelId });
 
     let session = activeSessions.get(channelId);
 
-    // Clear any existing game state when initializing a new session
-    if (session) {
-      session.gameState = null;
-    } else {
+    // Create new session if it doesn't exist
+    if (!session) {
       session = {
         participants: [],
         gameState: null,
@@ -69,18 +75,36 @@ io.on('connection', (socket) => {
       activeSessions.set(channelId, session);
     }
 
-    // Add the current user to participants if not already present
-    if (!session.participants.find(p => p.id === userId)) {
+    // Update or add the participant
+    const existingParticipant = session.participants.find(p => p.id === userId);
+    if (existingParticipant) {
+      // Update existing participant's socket ID and other details
+      existingParticipant.socketId = socket.id;
+      existingParticipant.avatar = socket.handshake.query.avatar as string;
+      existingParticipant.global_name = socket.handshake.query.global_name as string;
+    } else {
+      // Add new participant
       session.participants.push({
         id: userId,
         username,
+        socketId: socket.id,
         avatar: socket.handshake.query.avatar as string,
         global_name: socket.handshake.query.global_name as string
       });
     }
 
-    // For AI games, create a new game state immediately
-    if (isAIGame) {
+    // Join the socket to the channel room
+    socket.join(channelId);
+
+    // If there's an existing game state and this user is part of it, restore it
+    if (session.gameState) {
+      const { players } = session.gameState;
+      if (players.X === userId || players.O === userId) {
+        socket.emit('gameState', session.gameState);
+      }
+    }
+    // For AI games, create a new game state if none exists
+    else if (isAIGame) {
       const gameState = {
         ...createNewGame(channelId),
         isAIGame: true,
@@ -94,9 +118,6 @@ io.on('connection', (socket) => {
       io.to(channelId).emit('gameState', gameState);
     }
 
-    // Join the socket to the channel room
-    socket.join(channelId);
-    
     // Emit the current session state
     io.to(channelId).emit('sessionState', {
       participants: session.participants,
@@ -119,26 +140,25 @@ io.on('connection', (socket) => {
     const session = activeSessions.get(channelId);
     if (!session) return;
 
-    // Update session participants while preserving existing participant data
-    const updatedParticipants = participants.map((newParticipant: any) => ({
-      ...newParticipant,
-      ...session.participants.find(p => p.id === newParticipant.id),
-      avatar: newParticipant.avatar,
-      global_name: newParticipant.global_name
-    }));
+    const userInfo = socketToUser.get(socket.id);
+    if (!userInfo) return;
+
+    // Update session participants while preserving socket IDs
+    const updatedParticipants = participants.map((newParticipant: any) => {
+      const existing = session.participants.find(p => p.id === newParticipant.id);
+      return {
+        ...newParticipant,
+        socketId: existing?.socketId,
+        avatar: newParticipant.avatar,
+        global_name: newParticipant.global_name
+      };
+    });
 
     session.participants = updatedParticipants;
 
-    // Get the current user's ID from the socket
-    const currentUserId = session.participants.find(p => 
-      p.id === socket.id || // Check socket ID
-      session.gameState?.players.X === p.id || // Check if player X
-      session.gameState?.players.O === p.id // Check if player O
-    )?.id;
-
     // For AI games, only include the current user in participants
     const filteredParticipants = isAIGame 
-      ? session.participants.filter(p => p.id === currentUserId)
+      ? session.participants.filter(p => p.id === userInfo.userId)
       : session.participants;
 
     // Emit updated session state to all clients
@@ -146,11 +166,11 @@ io.on('connection', (socket) => {
       participants: filteredParticipants,
       gameState: session.gameState,
       availableForGame: isAIGame 
-        ? [] // No available players in AI mode
+        ? [] 
         : session.participants.filter(p => 
-            p.id !== currentUserId && // Not the current user
-            p.id !== (session.gameState?.players.X || null) && // Not already player X
-            p.id !== (session.gameState?.players.O || null) // Not already player O
+            p.id !== userInfo.userId &&
+            p.id !== (session.gameState?.players.X || null) &&
+            p.id !== (session.gameState?.players.O || null)
           )
     });
   });
@@ -261,13 +281,13 @@ io.on('connection', (socket) => {
       if (session) {
         // Remove the disconnected user from participants
         session.participants = session.participants.filter(
-          p => p.id !== socket.id
+          p => p.id !== socketToUser.get(socket.id)?.userId
         );
         
         // If game is in progress and disconnected player was part of it, end the game
         if (session.gameState && 
-           (session.gameState.players.X === socket.id || 
-            session.gameState.players.O === socket.id)) {
+           (session.gameState.players.X === socketToUser.get(socket.id)?.userId || 
+            session.gameState.players.O === socketToUser.get(socket.id)?.userId)) {
           session.gameState = null;
         }
 
@@ -279,6 +299,7 @@ io.on('connection', (socket) => {
         });
       }
     }
+    socketToUser.delete(socket.id);
   });
 
   // Handle stats request
@@ -291,6 +312,56 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.error('Error fetching user stats:', error);
     }
+  });
+
+  // Handle game invites
+  socket.on('sendGameInvite', ({ inviteeId, channelId }) => {
+    const session = activeSessions.get(channelId);
+    if (!session) return;
+
+    const inviter = session.participants.find(p => p.id === socketToUser.get(socket.id)?.userId);
+    if (!inviter) return;
+
+    // Find the invitee's socket ID
+    const invitee = session.participants.find(p => p.id === inviteeId);
+    if (!invitee?.socketId) return;
+
+    const inviteId = `${channelId}-${Date.now()}`;
+    
+    // Send the invite only to the invitee's socket
+    io.to(invitee.socketId).emit('gameInvite', {
+      inviter,
+      inviteId,
+      inviteeId
+    });
+  });
+
+  socket.on('respondToInvite', ({ inviteId, accepted, inviterId, inviteeId, channelId }) => {
+    const session = activeSessions.get(channelId);
+    if (!session) return;
+
+    if (accepted) {
+      // Create new game state
+      const gameState = {
+        ...createNewGame(channelId),
+        isAIGame: false,
+        players: {
+          X: inviterId,
+          O: inviteeId
+        }
+      };
+
+      session.gameState = gameState;
+      saveGameState(gameState);
+      io.to(channelId).emit('gameState', gameState);
+    }
+
+    // Notify the inviter of the response
+    io.to(channelId).emit('inviteResponse', {
+      accepted,
+      inviterId,
+      inviteeId
+    });
   });
 });
 
