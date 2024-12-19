@@ -12,14 +12,6 @@ import Game from "@/components/Game";
 import Image from "next/image";
 import Loader from "@/components/Loader";
 
-interface GameModeState {
-  type: "menu" | "ai" | "pvp";
-  inviteData?: {
-    inviterId: string;
-    inviteId: string;
-  };
-}
-
 export default function Home() {
   const {
     isLoading,
@@ -32,7 +24,7 @@ export default function Home() {
   } = useDiscordContext();
 
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
-  const [gameMode, setGameMode] = useState<GameModeState>({ type: "menu" });
+  const [gameMode, setGameMode] = useState<"menu" | "ai" | "pvp">("menu");
   const [socket, setSocket] = useState<any>(null);
   const [gameInvite, setGameInvite] = useState<{
     inviter: any;
@@ -119,22 +111,16 @@ export default function Home() {
   const handleInviteResponse = async (accepted: boolean) => {
     if (!socket || !gameInvite) return;
 
+    socket.emit("respondToInvite", {
+      inviteId: gameInvite.inviteId,
+      accepted,
+      inviterId: gameInvite.inviter.id,
+      inviteeId: currentUser?.id,
+      channelId: sdk?.channelId,
+    });
+
     if (accepted) {
-      setGameMode({
-        type: "pvp",
-        inviteData: {
-          inviterId: gameInvite.inviter.id,
-          inviteId: gameInvite.inviteId,
-        },
-      });
-    } else {
-      socket.emit("respondToInvite", {
-        inviteId: gameInvite.inviteId,
-        accepted,
-        inviterId: gameInvite.inviter.id,
-        inviteeId: currentUser?.id,
-        channelId: sdk?.channelId,
-      });
+      setGameMode("pvp");
     }
 
     setGameInvite(null);
@@ -154,13 +140,13 @@ export default function Home() {
 
   const handleGameModeChange = (mode: "menu" | "ai" | "pvp") => {
     socket?.emit("requestStats", { userId: currentUser.id });
-    setGameMode({ type: mode });
+    setGameMode(mode);
   };
 
   return (
-    <div className="h-screen bg-[#0f1117] text-white ">
+    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
       <AnimatePresence mode="wait">
-        {gameMode.type === "menu" ? (
+        {gameMode === "menu" ? (
           <motion.div
             key="menu"
             initial={{ opacity: 0, y: 20 }}
@@ -329,12 +315,18 @@ export default function Home() {
             </div>
           </motion.div>
         ) : (
-          <Game
+          <motion.div
             key="game"
-            mode={gameMode.type}
-            inviteData={gameMode.inviteData}
-            onBack={() => setGameMode({ type: "menu" })}
-          />
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="h-full"
+          >
+            <Game
+              mode={gameMode === "ai" ? "ai" : "pvp"}
+              onBack={() => handleGameModeChange("menu")}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 

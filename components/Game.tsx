@@ -25,14 +25,10 @@ const AI_PARTICIPANT: DiscordParticipant = {
 
 interface GameProps {
   mode: "ai" | "pvp";
-  inviteData?: {
-    inviterId: string;
-    inviteId: string;
-  };
   onBack: () => void;
 }
 
-function GameComponent({ mode, inviteData, onBack }: GameProps) {
+function GameComponent({ mode, onBack }: GameProps) {
   const [isAIGame, setIsAIGame] = useState(mode === "ai");
   const { currentUser, sdk } = useDiscordContext();
 
@@ -115,28 +111,11 @@ function GameComponent({ mode, inviteData, onBack }: GameProps) {
 
     newSocket.on("connect", () => {
       console.log("Connected to socket server");
-
-      // If we have invite data, send the response first
-      if (inviteData) {
-        newSocket.emit("respondToInvite", {
-          inviteId: inviteData.inviteId,
-          accepted: true,
-          inviterId: inviteData.inviterId,
-          inviteeId: currentUser?.id,
-          channelId: sdk?.channelId,
-        });
-      }
-
-      // Then initialize the session
       newSocket.emit("initializeSession", {
         channelId: sdk.channelId,
         userId: currentUser.id,
         username: currentUser.username,
         isAIGame,
-        ...(inviteData && {
-          inviterId: inviteData.inviterId,
-          inviteId: inviteData.inviteId,
-        }),
       });
     });
 
@@ -184,14 +163,6 @@ function GameComponent({ mode, inviteData, onBack }: GameProps) {
     newSocket.on("inviteResponse", ({ accepted, inviterId }) => {
       if (accepted) {
         setWaitingForResponse(false);
-        // Initialize new game session when invite is accepted
-        newSocket.emit("initializeSession", {
-          channelId: sdk?.channelId,
-          userId: currentUser?.id,
-          username: currentUser?.username,
-          isAIGame: false,
-          inviterId: inviterId,
-        });
       } else {
         setWaitingForResponse(false);
         alert("Player declined your invitation");
@@ -209,7 +180,7 @@ function GameComponent({ mode, inviteData, onBack }: GameProps) {
       setWaitingForResponse(false);
       setSessionError(null);
     };
-  }, [currentUser?.id, sdk?.channelId, isAIGame, inviteData]);
+  }, [currentUser?.id, sdk?.channelId, isAIGame]);
 
   const handleMove = useCallback(
     (position: number) => {
@@ -492,10 +463,10 @@ function GameComponent({ mode, inviteData, onBack }: GameProps) {
   );
 }
 
-export default function Game({ mode, inviteData, onBack }: GameProps) {
+export default function Game({ mode, onBack }: GameProps) {
   return (
     <Suspense>
-      <GameComponent mode={mode} inviteData={inviteData} onBack={onBack} />
+      <GameComponent mode={mode} onBack={onBack} />
     </Suspense>
   );
 }
