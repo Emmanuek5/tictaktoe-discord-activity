@@ -29,8 +29,7 @@ import {
   NextApiResponseServerIO,
   Participant,
   ChannelSession,
-  GameSession,
-  ParticipantPresence
+  GameSession
 } from '../types/socket';
 
 const app = express();
@@ -88,95 +87,6 @@ async function getConnectedParticipants(channelId: string): Promise<Participant[
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   let userChannelId: string | null = null;
-
-  // Handle user presence
-  socket.on('updatePresence', async ({ userId, username, channelId, avatar, global_name }: ParticipantPresence) => {
-    console.log('Presence update:', { userId, username, channelId });
-    
-    userChannelId = channelId;
-    socketToUser.set(socket.id, { userId, channelId });
-
-    // Get or create session
-    let session = activeSessions.get(channelId);
-    if (!session) {
-      const savedSession = await getChannelSession(channelId);
-      if (savedSession) {
-        session = savedSession;
-      } else {
-        session = {
-          participants: [],
-          games: new Map(),
-        };
-      }
-      activeSessions.set(channelId, session);
-    }
-
-    // Update participant
-    const participant: Participant = {
-      id: userId,
-      username,
-      socketId: socket.id,
-      avatar,
-      global_name,
-      status: 'online',
-      lastSeen: Date.now()
-    };
-
-    // Update Redis and get updated participants list
-    const updatedParticipants = await addChannelParticipant(channelId, participant);
-    session.participants = updatedParticipants;
-
-    // Save session state to Redis
-    await saveChannelSession(channelId, session);
-
-    // Join the channel room
-    socket.join(channelId);
-
-    // Emit updated session state
-    const connectedParticipants = await getConnectedParticipants(channelId);
-    const availableParticipants = connectedParticipants.filter(p => 
-      p.id !== userId && 
-      p.status === 'online' &&
-      !Array.from(session.games.values()).some(game => 
-        game.gameState.players.X === p.id || 
-        game.gameState.players.O === p.id
-      )
-    );
-
-    io.to(channelId).emit('participantUpdate', {
-      participants: connectedParticipants,
-      availableForGame: availableParticipants
-    });
-  });
-
-  // Update participant status when they join a game
-  const updateParticipantStatus = async (channelId: string, userId: string, status: 'online' | 'ingame' | 'offline') => {
-    const session = activeSessions.get(channelId);
-    if (!session) return;
-
-    const participant = session.participants.find(p => p.id === userId);
-    if (participant) {
-      participant.status = status;
-      participant.lastSeen = Date.now();
-      
-      await saveChannelParticipants(channelId, session.participants);
-      
-      const connectedParticipants = await getConnectedParticipants(channelId);
-      const availableParticipants = connectedParticipants.filter(p => 
-        p.id !== userId && 
-        p.status === 'online' &&
-        !Array.from(session.games.values()).some(game => 
-          game.gameState.players.X === p.id || 
-          game.gameState.players.O === p.id
-        )
-      );
-
-      io.to(channelId).emit('participantUpdate', {
-        participants: connectedParticipants,
-        availableForGame: availableParticipants
-      });
-    }
-  };
 
   // Helper function to emit session state
   const emitSessionState = async (channelId: string, isAIGame: boolean = false) => {
@@ -270,9 +180,7 @@ io.on('connection', (socket) => {
           username,
           socketId: socket.id,
           avatar: socket.handshake.query.avatar as string,
-          global_name: socket.handshake.query.global_name as string,
-          status: 'online',
-          lastSeen: Date.now()
+          global_name: socket.handshake.query.global_name as string
         };
 
         // Update Redis and get updated participants list
@@ -368,9 +276,6 @@ io.on('connection', (socket) => {
           // Update participant's socket ID in Redis
           await updateParticipantSocket(userInfo.channelId, userInfo.userId, null);
           
-          // Update participant status
-          await updateParticipantStatus(userInfo.channelId, userInfo.userId, 'offline');
-          
           // Clean up empty games
           for (const [gameId, game] of session.games) {
             if (game.playerSockets.X === socket.id) {
@@ -425,9 +330,6 @@ io.on('connection', (socket) => {
         gameId: move.gameId,
         state: newState
       });
-
-      // Update participant status
-      await updateParticipantStatus(userInfo.channelId, userInfo.userId, 'ingame');
 
       // For AI games, make AI move
       if (newState.isAIGame && !newState.winner && !newState.isDraw) {

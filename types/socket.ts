@@ -17,8 +17,6 @@ export interface Participant {
   avatar?: string;
   global_name?: string;
   socketId?: string | null;
-  status?: 'online' | 'ingame' | 'offline';
-  lastSeen?: number;
 }
 
 export interface ChannelSession {
@@ -33,12 +31,4 @@ export interface GameSession {
     X: string | null;
     O: string | null;
   };
-}
-
-export interface ParticipantPresence {
-  userId: string;
-  username: string;
-  channelId: string;
-  avatar?: string;
-  global_name?: string;
 }
