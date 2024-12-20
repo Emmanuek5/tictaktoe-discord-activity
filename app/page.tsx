@@ -63,6 +63,8 @@ export default function Home() {
         channelId: sdk.channelId,
         userId: currentUser.id,
         username: currentUser.username,
+        avatar: currentUser.avatar,
+        global_name: currentUser.global_name,
       },
       timeout: 5000,
     });
@@ -70,7 +72,7 @@ export default function Home() {
     setSocket(newSocket);
 
     newSocket.onAny((eventName, ...args) => {
-      console.log(eventName, args);
+      console.log("Socket Event:", eventName, args);
     });
 
     // Request initial stats
@@ -79,6 +81,8 @@ export default function Home() {
         channelId: sdk.channelId,
         userId: currentUser.id,
         username: currentUser.username,
+        avatar: currentUser.avatar,
+        global_name: currentUser.global_name,
         isAIGame: false,
       });
       newSocket.emit("requestStats", { userId: currentUser.id });
