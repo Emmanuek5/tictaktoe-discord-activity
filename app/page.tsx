@@ -31,6 +31,8 @@ export default function Home() {
     inviteId: string;
   } | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
+  const [availablePlayers, setAvailablePlayers] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<any[]>([]);
 
   // Handle window resize
   useEffect(() => {
@@ -49,49 +51,59 @@ export default function Home() {
 
   // Handle socket connection
   useEffect(() => {
-    console.log("Initializing socket connection");
+    if (!currentChannel || !currentUser) return;
 
-    if (!currentUser?.id || !sdk?.channelId) {
-      console.log("Missing user ID or channel ID");
-      return;
-    }
-
-    const newSocket = io("", {
-      path: "/.proxy/socket",
-      transports: ["websocket", "polling"],
-      query: {
-        channelId: sdk.channelId,
-        userId: currentUser.id,
-        username: currentUser.username,
-      },
-      timeout: 5000,
+    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000', {
+      path: '/socket',
+      transports: ['websocket'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
-    setSocket(newSocket);
-
-    newSocket.onAny((eventName, ...args) => {
-      console.log(eventName, args);
-    });
-
-    // Request initial stats
-    if (currentUser?.id) {
-      newSocket.emit("initializeSession", {
-        channelId: sdk.channelId,
+    socketInstance.on('connect', () => {
+      console.log('Socket connected');
+      
+      // Send presence update
+      socketInstance.emit('updatePresence', {
         userId: currentUser.id,
         username: currentUser.username,
-        isAIGame: false,
+        channelId: currentChannel.id,
+        avatar: currentUser.avatar,
+        global_name: currentUser.global_name
       });
-      newSocket.emit("requestStats", { userId: currentUser.id });
-    }
+    });
+
+    // Handle participant updates
+    socketInstance.on('participantUpdate', ({ participants, availableForGame }) => {
+      setAvailablePlayers(availableForGame);
+      setParticipants(participants);
+    });
+
+    setSocket(socketInstance);
 
     return () => {
-      if (newSocket) {
-        console.log("disconnecting socket");
-
-        newSocket.disconnect();
-      }
+      socketInstance.disconnect();
     };
-  }, [currentUser?.id, sdk?.channelId]);
+  }, [currentChannel, currentUser]);
+
+  // Send periodic presence updates
+  useEffect(() => {
+    if (!socket || !currentChannel || !currentUser) return;
+
+    const interval = setInterval(() => {
+      socket.emit('updatePresence', {
+        userId: currentUser.id,
+        username: currentUser.username,
+        channelId: currentChannel.id,
+        avatar: currentUser.avatar,
+        global_name: currentUser.global_name
+      });
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [socket, currentChannel, currentUser]);
 
   // Handle game invites and stats
   useEffect(() => {
@@ -144,217 +156,71 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
-      <AnimatePresence mode="wait">
-        {gameMode === "menu" ? (
-          <motion.div
-            key="menu"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="min-h-screen flex flex-col md:flex-row"
-          >
-            {/* Left sidebar with user stats */}
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-white/10"
-            >
-              <div className="space-y-4 md:space-y-6">
-                {/* User Profile */}
-                <div className="flex md:flex-col items-center space-x-4 md:space-x-0 md:space-y-4">
-                  <Image
-                    src={
-                      currentUser?.avatar
-                        ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
-                        : "https://cdn.discordapp.com/embed/avatars/0.png"
-                    }
-                    width={60}
-                    height={60}
-                    alt="User Avatar"
-                    className="rounded-full border-2 border-white/20 md:w-20 md:h-20"
-                  />
-                  <div className="text-left md:text-center">
-                    <h2 className="font-semibold text-base md:text-lg">
-                      {currentUser.global_name || currentUser.username}
-                    </h2>
-                    <p className="text-xs md:text-sm text-white/60">
-                      {currentGuild?.name} • {currentChannel?.name}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                {userStats && (
-                  <div className="space-y-4 md:space-y-6">
-                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
-                      <h3 className="text-sm font-medium mb-3 text-white/70">
-                        Overall Stats
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 md:gap-6">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">
-                            {userStats.totalGames}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Games Played
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">
-                            {(
-                              (userStats.wins / userStats.totalGames) * 100 || 0
-                            ).toFixed(1)}
-                            %
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Win Rate
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
-                      <h3 className="text-sm font-medium mb-3 text-white/70">
-                        Game Results
-                      </h3>
-                      <div className="grid grid-cols-3 gap-2 md:gap-4">
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-green-400">
-                            {userStats.wins}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Wins
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-red-400">
-                            {userStats.losses}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Losses
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-yellow-400">
-                            {userStats.draws}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Draws
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
-                      <h3 className="text-sm font-medium mb-3 text-white/70">
-                        AI Games
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 md:gap-6">
-                        <div className="text-center">
-                          <p className="text-xl font-bold">
-                            {userStats.aiGamesPlayed}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Games vs AI
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xl font-bold">
-                            {(
-                              (userStats.aiWins / userStats.aiGamesPlayed) *
-                                100 || 0
-                            ).toFixed(1)}
-                            %
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            AI Win Rate
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Main content */}
-            <div className="flex-1 flex items-center justify-center">
-              <div className="max-w-md w-full space-y-12 p-8 md:p-12">
-                <div className="text-center space-y-4">
-                  <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
-                    Tic Tac{" "}
-                    <span className="text-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">
-                      Showdown
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#0f1117] text-white p-4">
+      {gameMode === "menu" ? (
+        <div className="flex flex-col items-center space-y-8">
+          <h1 className="text-4xl font-bold mb-8">Choose Game Mode</h1>
+          
+          {/* Display available players */}
+          {participants && participants.length > 0 && (
+            <div className="mb-8 text-center">
+              <h2 className="text-2xl font-semibold mb-4">Players in Channel</h2>
+              <div className="flex flex-wrap justify-center gap-4">
+                {participants.map((participant) => (
+                  <div
+                    key={participant.id}
+                    className={`flex items-center space-x-2 p-3 rounded-lg ${
+                      participant.status === 'online' ? 'bg-green-600' :
+                      participant.status === 'ingame' ? 'bg-blue-600' :
+                      'bg-gray-600'
+                    }`}
+                  >
+                    {participant.avatar && (
+                      <Image
+                        src={`https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png`}
+                        alt={participant.username}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                      />
+                    )}
+                    <span>{participant.global_name || participant.username}</span>
+                    <span className="text-xs">
+                      {participant.status === 'online' ? '(Available)' :
+                       participant.status === 'ingame' ? '(In Game)' :
+                       '(Offline)'}
                     </span>
-                  </h1>
-                  <p className="text-lg md:text-xl text-white/60">
-                    Challenge friends or test your skills against AI
-                  </p>
-                </div>
-
-                <div className="space-y-4 md:space-y-6">
-                  <Button
-                    size="lg"
-                    className="w-full h-16 md:h-20 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
-                    onClick={() => handleGameModeChange("pvp")}
-                  >
-                    <Users className="w-6 h-6 mr-3" />
-                    Play with Friends
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="w-full h-16 md:h-20 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
-                    onClick={() => handleGameModeChange("ai")}
-                  >
-                    <Bot className="w-6 h-6 mr-3" />
-                    Play against AI
-                  </Button>
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="game"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="h-full"
-          >
-            <Game
-              mode={gameMode === "ai" ? "ai" : "pvp"}
-              onBack={() => handleGameModeChange("menu")}
-              inviteData={gameInvite}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
 
-      {/* Game Invite Modal */}
-      <AnimatePresence>
-        {gameInvite && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-[#1a1b26] p-6 rounded-xl border border-white/10 shadow-xl"
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-8">
+            <Button
+              onClick={() => setGameMode("ai")}
+              className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700"
             >
-              <GameInvite
-                inviter={gameInvite.inviter}
-                onAccept={() => handleInviteResponse(true)}
-                onDecline={() => handleInviteResponse(false)}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <Bot className="w-5 h-5" />
+              <span>Play vs AI</span>
+            </Button>
+            <Button
+              onClick={() => setGameMode("pvp")}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+              disabled={!availablePlayers || availablePlayers.length === 0}
+            >
+              <Users className="w-5 h-5" />
+              <span>Play vs Player {availablePlayers && availablePlayers.length > 0 ? `(${availablePlayers.length} Available)` : '(No Players Available)'}</span>
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Game
+          mode={gameMode === "ai" ? "ai" : "pvp"}
+          onBack={() => handleGameModeChange("menu")}
+          inviteData={gameInvite}
+        />
+      )}
     </div>
   );
 }
