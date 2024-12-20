@@ -117,33 +117,42 @@ io.on('connection', (socket) => {
   // Helper function to emit session state
   const emitSessionState = async (channelId: string, isAIGame: boolean = false) => {
     try {
+      console.log('Emitting session state for channel:', channelId);
+      
       const session = activeSessions.get(channelId);
       if (!session) {
         console.log('No session found for channel:', channelId);
         return;
       }
 
-      const userInfo = socketToUser.get(socket.id);
-      if (!userInfo) {
-        console.log('No user info found for socket:', socket.id);
-        return;
-      }
-
       // Get participants from Redis
       const participants = await getChannelParticipants(channelId);
+      console.log('Got participants from Redis:', participants);
       
-      // Filter out disconnected participants
+      // Get all sockets in the channel
+      const roomSockets = await io.in(channelId).fetchSockets();
+      const socketIds = new Set(roomSockets.map(s => s.id));
+      
+      console.log('Active sockets in room:', Array.from(socketIds));
+      
+      // Filter out disconnected participants with more lenient check
       const connectedParticipants = participants.filter(p => {
-        if (!p.socketId) {
-          console.log('Participant has no socketId:', p.username);
-          return false;
+        // Always include participants that are in the room
+        if (p.socketId && socketIds.has(p.socketId)) {
+          console.log('Participant in room:', p.username);
+          return true;
         }
-        const socket = io.sockets.sockets.get(p.socketId);
-        const isConnected = socket && socket.connected;
-        if (!isConnected) {
-          console.log('Participant socket not connected:', p.username);
+        
+        // If no socketId, check if they have a new socket in the room
+        const userSocket = roomSockets.find(s => s.data.userId === p.id);
+        if (userSocket) {
+          console.log('Participant found with different socket:', p.username);
+          p.socketId = userSocket.id;
+          return true;
         }
-        return isConnected;
+
+        console.log('Participant not in room:', p.username);
+        return false;
       });
 
       // Update Redis with connected participants
@@ -154,13 +163,13 @@ io.on('connection', (socket) => {
 
       // For AI games, only include the current user
       const filteredParticipants = isAIGame 
-        ? connectedParticipants.filter(p => p.id === userInfo.userId)
+        ? connectedParticipants.filter(p => p.id === socket.data.userId)
         : connectedParticipants;
 
       const availableForGame = isAIGame 
         ? []
         : connectedParticipants.filter(p => 
-            p.id !== userInfo.userId &&
+            p.id !== socket.data.userId &&
             !Array.from(session.games.values()).some(game => 
               game.gameState.players.X === p.id || 
               game.gameState.players.O === p.id
@@ -168,14 +177,15 @@ io.on('connection', (socket) => {
           );
 
       // Add debug logging
-      console.log('Emitting session state:', {
+      console.log('Final session state:', {
         channelId,
         participantsCount: filteredParticipants.length,
         availableCount: availableForGame.length,
         participants: filteredParticipants.map(p => ({
           id: p.id,
           username: p.username,
-          connected: !!io.sockets.sockets.get(p.socketId as string)?.connected
+          socketId: p.socketId,
+          inRoom: socketIds.has(p.socketId || '')
         }))
       });
 
@@ -192,8 +202,15 @@ io.on('connection', (socket) => {
   socket.on("initializeSession", async ({ channelId, userId, username, avatar, global_name, isAIGame }) => {
     console.log('Initializing session:', { channelId, userId, username, avatar, global_name, isAIGame });
     
+    // Store user info in socket data for easy access
+    socket.data.userId = userId;
+    socket.data.channelId = channelId;
+    
     userChannelId = channelId;
     socketToUser.set(socket.id, { userId, channelId });
+
+    // Join the socket to the channel room first
+    socket.join(channelId);
 
     // Get or create session from Redis
     let session = activeSessions.get(channelId);
@@ -210,13 +227,6 @@ io.on('connection', (socket) => {
       activeSessions.set(channelId, session);
     }
 
-    // Initialize user stats in the database
-    try {
-      await initUserStats(userId, username);
-    } catch (error) {
-      console.error('Error initializing user stats:', error);
-    }
-
     // Update participant with retry logic
     let retryCount = 0;
     const maxRetries = 3;
@@ -226,8 +236,8 @@ io.on('connection', (socket) => {
         const participant: Participant = {
           id: userId,
           username,
-          avatar,
-          global_name,
+          avatar: avatar || null,
+          global_name: global_name || null,
           socketId: socket.id
         };
 
@@ -264,9 +274,6 @@ io.on('connection', (socket) => {
     while (!(await updateParticipant()) && retryCount < maxRetries) {
       console.log(`Retrying participant update (${retryCount + 1}/${maxRetries})`);
     }
-
-    // Join the socket to the channel room
-    socket.join(channelId);
 
     // For AI games, create a new game state
     if (isAIGame) {

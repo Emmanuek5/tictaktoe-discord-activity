@@ -31,6 +31,8 @@ export default function Home() {
     inviteId: string;
   } | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [availablePlayers, setAvailablePlayers] = useState<any[]>([]);
 
   // Handle window resize
   useEffect(() => {
@@ -75,8 +77,16 @@ export default function Home() {
       console.log("Socket Event:", eventName, args);
     });
 
-    // Request initial stats
+    // Request initial session state
     if (currentUser?.id) {
+      console.log("Emitting initializeSession", {
+        channelId: sdk.channelId,
+        userId: currentUser.id,
+        username: currentUser.username,
+        avatar: currentUser.avatar,
+        global_name: currentUser.global_name,
+      });
+
       newSocket.emit("initializeSession", {
         channelId: sdk.channelId,
         userId: currentUser.id,
@@ -91,15 +101,26 @@ export default function Home() {
     return () => {
       if (newSocket) {
         console.log("disconnecting socket");
-
         newSocket.disconnect();
       }
     };
   }, [currentUser?.id, sdk?.channelId]);
 
-  // Handle game invites and stats
+  // Handle session state updates
   useEffect(() => {
     if (!socket) return;
+
+    socket.on(
+      "sessionState",
+      ({ participants: sessionParticipants, availableForGame }: any) => {
+        console.log("Received sessionState:", {
+          sessionParticipants,
+          availableForGame,
+        });
+        setParticipants(sessionParticipants || []);
+        setAvailablePlayers(availableForGame || []);
+      }
+    );
 
     socket.on("gameInvite", ({ inviter, inviteId }: any) => {
       setGameInvite({ inviter, inviteId });
@@ -107,9 +128,14 @@ export default function Home() {
 
     socket.on("userStats", (stats: any) => {
       setUserStats(stats);
-
-      return () => {};
     });
+
+    // Cleanup
+    return () => {
+      socket.off("sessionState");
+      socket.off("gameInvite");
+      socket.off("userStats");
+    };
   }, [socket]);
 
   const handleInviteResponse = async (accepted: boolean) => {
