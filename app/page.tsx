@@ -177,7 +177,9 @@ export default function Home() {
       setGameMode("pvp");
     }
 
-    setGameInvite(null);
+    setTimeout(() => {
+      setGameInvite(null);
+    }, 2000);
   };
 
   if (isLoading || !currentUser) {
