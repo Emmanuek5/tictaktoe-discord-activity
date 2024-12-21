@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-const config = {
+const config: Config = {
   darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
@@ -134,6 +134,18 @@ const config = {
             "background-position": "right center",
           },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0) rotate(0)" },
+          "50%": { transform: "translateY(-20px) rotate(180deg)" },
+        },
+        pulse: {
+          "0%, 100%": { opacity: "0.1", transform: "scale(1)" },
+          "50%": { opacity: "0.2", transform: "scale(1.1)" },
+        },
+        scan: {
+          "0%": { transform: "translateY(-100%)" },
+          "100%": { transform: "translateY(100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -146,6 +158,13 @@ const config = {
         "gradient-x": "gradient-x 15s ease infinite",
         "gradient-y": "gradient-y 15s ease infinite",
         "gradient-xy": "gradient-xy 15s ease infinite",
+        "float-slow": "float 8s ease-in-out infinite",
+        "float-medium": "float 6s ease-in-out infinite",
+        "float-fast": "float 4s ease-in-out infinite",
+        "pulse-slow": "pulse 6s ease-in-out infinite",
+        "pulse-medium": "pulse 4s ease-in-out infinite",
+        scan: "scan 2s linear infinite",
+        blink: "blink 1.4s step-end infinite",
       },
       fontFamily: {
         arcade: ["Press Start 2P", "cursive"],
@@ -156,6 +175,6 @@ const config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+};
 
 export default config;

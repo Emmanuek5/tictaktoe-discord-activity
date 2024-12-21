@@ -199,6 +199,27 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#000000] text-white overflow-auto relative">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#33ff3305_1px,transparent_1px),linear-gradient(to_bottom,#33ff3305_1px,transparent_1px)] bg-[size:14px_24px]" />
+      
+      {/* Radial Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_-30%,#33ff3330,transparent)]" />
+
+      {/* Animated Shapes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Floating squares */}
+        <div className="absolute -left-4 top-1/4 w-24 h-24 border border-[#33ff33]/20 rotate-45 animate-float-slow" />
+        <div className="absolute right-1/4 top-1/3 w-16 h-16 border border-[#33ff33]/30 rotate-12 animate-float-medium" />
+        <div className="absolute left-1/3 bottom-1/4 w-20 h-20 border border-[#33ff33]/25 -rotate-12 animate-float-fast" />
+        
+        {/* Glowing orbs */}
+        <div className="absolute left-1/4 top-1/4 w-32 h-32 rounded-full bg-[#33ff33] opacity-10 blur-3xl animate-pulse-slow" />
+        <div className="absolute right-1/3 bottom-1/3 w-40 h-40 rounded-full bg-[#33ff33] opacity-10 blur-3xl animate-pulse-medium" />
+      </div>
+
+      {/* Scanlines */}
+      <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,#33ff3308_50%,transparent_100%)] bg-[size:100%_4px] animate-scan" />
+
       {/* Sound Toggle */}
       <div className="absolute top-4 right-4 z-50">
         <SoundToggle />
@@ -211,13 +232,13 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="min-h-screen flex flex-col md:flex-row"
+            className="min-h-screen flex flex-col md:flex-row relative"
           >
             {/* Left sidebar with user stats */}
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-[#333333] bg-[#000000]"
+              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-[#33ff33] bg-[#000000]/80 backdrop-blur-sm relative z-10"
             >
               <div className="space-y-4 md:space-y-6">
                 {/* User Profile */}
@@ -340,15 +361,15 @@ export default function Home() {
             </motion.div>
 
             {/* Main content */}
-            <div className="flex-1 flex items-center justify-center bg-[#000000] bg-opacity-95">
+            <div className="flex-1 flex items-center justify-center bg-[#000000] bg-opacity-95 relative">
               <div className="max-w-md w-full space-y-12 p-8 md:p-12">
                 <div className="text-center space-y-4">
-                  <h1 className="font-arcade text-5xl tracking-wide leading-relaxed">
-                    <span className="text-[#00ff00] drop-shadow-[0_0_2px_#00ff00]">
+                  <h1 className="font-arcade text-5xl tracking-wide leading-relaxed [text-shadow:0_0_10px_#33ff33]">
+                    <span className="text-[#33ff33]">
                       TIC TAC
                     </span>{" "}
                     <br />
-                    <span className="text-[#ff0000] drop-shadow-[0_0_2px_#ff0000]">
+                    <span className="text-[#33ff33]">
                       SHOWDOWN
                     </span>
                   </h1>
@@ -360,29 +381,43 @@ export default function Home() {
                 <div className="space-y-4 md:space-y-6">
                   <Button
                     size="lg"
-                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#4444ff] text-[#4444ff] hover:bg-[#4444ff] hover:text-black transition-all duration-300"
+                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#33ff33] text-[#33ff33] 
+                      hover:bg-[#33ff33]/10 hover:shadow-[0_0_10px_#33ff33] transition-all duration-300 group relative overflow-hidden"
                     onClick={() => {
                       handleGameModeChange("pvp");
                       soundManager?.playSound("click");
                     }}
                   >
-                    <Users className="w-6 h-6 mr-3" />2 PLAYERS
+                    {/* Button glow effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute inset-0 bg-[#33ff33] blur-2xl opacity-20" />
+                    </div>
+                    <span className="relative z-10 flex items-center justify-center">
+                      <Users className="w-6 h-6 mr-3" />2 PLAYERS
+                    </span>
                   </Button>
+                  
                   <Button
                     size="lg"
-                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#ff4444] text-[#ff4444] hover:bg-[#ff4444] hover:text-black transition-all duration-300"
+                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#33ff33] text-[#33ff33] 
+                      hover:bg-[#33ff33]/10 hover:shadow-[0_0_10px_#33ff33] transition-all duration-300 group relative overflow-hidden"
                     onClick={() => {
                       handleGameModeChange("ai");
                       soundManager?.playSound("click");
                     }}
                   >
-                    <Bot className="w-6 h-6 mr-3" />
-                    VS AI
+                    {/* Button glow effect */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute inset-0 bg-[#33ff33] blur-2xl opacity-20" />
+                    </div>
+                    <span className="relative z-10 flex items-center justify-center">
+                      <Bot className="w-6 h-6 mr-3" />VS AI
+                    </span>
                   </Button>
                 </div>
 
                 <div className="text-center">
-                  <p className="font-arcade text-xs text-[#ffff00] animate-pulse">
+                  <p className="font-arcade text-xs text-[#33ff33] animate-pulse">
                     HIGH SCORE: {userStats?.wins || 0}
                   </p>
                 </div>
@@ -412,16 +447,23 @@ export default function Home() {
       <AnimatePresence>
         {gameInvite && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
           >
-            <GameInvite
-              inviter={gameInvite.inviter}
-              onAccept={() => handleInviteResponse(true)}
-              onDecline={() => handleInviteResponse(false)}
-            />
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-[#000000] border-2 border-[#33ff33] p-6 rounded-xl shadow-[0_0_10px_#33ff33]"
+            >
+              <GameInvite
+                inviter={gameInvite.inviter}
+                onAccept={() => handleInviteResponse(true)}
+                onDecline={() => handleInviteResponse(false)}
+              />
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
