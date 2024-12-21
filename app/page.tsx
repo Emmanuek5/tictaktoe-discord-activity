@@ -200,14 +200,14 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#000000] text-white overflow-hidden">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/5 to-transparent opacity-50 animate-pulse" />
-      
+
       {/* Arcade decorations */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-[#33ff33]/10 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-0 right-0 w-48 h-48 bg-[#33ff33]/10 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/4 right-1/4 w-24 h-24 bg-[#ffff33]/10 rounded-full blur-3xl animate-float" />
-      
+
       {/* Scanline effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
 
@@ -219,11 +219,41 @@ export default function Home() {
         O X O
       </div>
 
+      {/* Sound toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <SoundToggle />
+      </div>
+
       {/* Main content */}
       <div className="relative h-full flex flex-col items-center justify-center p-4">
+        {/* User Profile */}
+        <div className="absolute top-4 left-4 flex items-center gap-4 bg-[#111111] border-2 border-[#33ff33] p-4">
+          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#33ff33]">
+            {currentUser?.avatar ? (
+              <img
+                src={`https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`}
+                alt={currentUser.username}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-[#111111] flex items-center justify-center">
+                <Users className="w-6 h-6 text-[#33ff33]" />
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="font-arcade text-sm text-[#33ff33]">
+              {currentUser?.global_name || currentUser?.username}
+            </div>
+            <div className="font-arcade text-xs text-[#33ff33]/70">
+              {currentGuild?.name} • {currentChannel?.name}
+            </div>
+          </div>
+        </div>
+
         {/* Game title */}
         <div className="text-center mb-12">
-          <h1 className="font-arcade text-6xl md:text-8xl bg-clip-text text-transparent bg-gradient-to-b from-[#33ff33] to-[#33ff33]/50 animate-glow">
+          <h1 className="font-arcade text-6xl md:text-8xl text-[#33ff33] drop-shadow-[0_0_10px_#33ff33]">
             TIC TAC TOE
           </h1>
           <div className="font-arcade text-[#33ff33] mt-2 animate-pulse">
@@ -238,79 +268,81 @@ export default function Home() {
             className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 p-4"
           >
             {/* Stats cards */}
-            <div className="space-y-6">
-              <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
-                <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                  PLAYER STATS
-                </h3>
-                <div className="grid grid-cols-2 gap-4 md:gap-6">
-                  <div className="text-center">
-                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
-                      {userStats.totalGames}
-                    </p>
-                    <p className="font-arcade text-xs text-[#33ff33]">
-                      TOTAL GAMES
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
-                      {userStats.winRate}%
-                    </p>
-                    <p className="font-arcade text-xs text-[#33ff33]">
-                      WIN RATE
-                    </p>
+            {userStats && (
+              <div className="space-y-6">
+                <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                  <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                    PLAYER STATS
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 md:gap-6">
+                    <div className="text-center">
+                      <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                        {userStats.totalGames}
+                      </p>
+                      <p className="font-arcade text-xs text-[#33ff33]">
+                        TOTAL GAMES
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                        {userStats.winRate}%
+                      </p>
+                      <p className="font-arcade text-xs text-[#33ff33]">
+                        WIN RATE
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
-                <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                  AI BATTLES
-                </h3>
-                <div className="grid grid-cols-2 gap-4 md:gap-6">
-                  <div className="text-center">
-                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
-                      {userStats.aiGamesPlayed}
-                    </p>
-                    <p className="font-arcade text-xs text-[#33ff33]">
-                      VS AI
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
-                      {userStats.aiWinRate}%
-                    </p>
-                    <p className="font-arcade text-xs text-[#33ff33]">
-                      AI WINS
-                    </p>
+                <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                  <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                    AI BATTLES
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 md:gap-6">
+                    <div className="text-center">
+                      <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                        {userStats.aiGamesPlayed}
+                      </p>
+                      <p className="font-arcade text-xs text-[#33ff33]">
+                        VS AI
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                        {userStats.aiWinRate}%
+                      </p>
+                      <p className="font-arcade text-xs text-[#33ff33]">
+                        AI WINS
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
-                <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                  PVP MATCHES
-                </h3>
-                <div className="grid grid-cols-2 gap-4 md:gap-6">
-                  <div className="text-center">
-                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
-                      {userStats.pvpGamesPlayed}
-                    </p>
-                    <p className="font-arcade text-xs text-[#33ff33]">
-                      VS PLAYERS
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
-                      {userStats.pvpWinRate}%
-                    </p>
-                    <p className="font-arcade text-xs text-[#33ff33]">
-                      PVP WINS
-                    </p>
+                <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                  <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                    PVP MATCHES
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 md:gap-6">
+                    <div className="text-center">
+                      <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                        {userStats.pvpGamesPlayed}
+                      </p>
+                      <p className="font-arcade text-xs text-[#33ff33]">
+                        VS PLAYERS
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                        {userStats.pvpWinRate}%
+                      </p>
+                      <p className="font-arcade text-xs text-[#33ff33]">
+                        PVP WINS
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Game modes */}
             <div className="flex flex-col justify-center gap-4">
@@ -347,6 +379,31 @@ export default function Home() {
           <Game mode={gameMode} onBack={() => handleGameModeChange("menu")} />
         )}
       </div>
+
+      {/* Game Invite Modal */}
+      <AnimatePresence>
+        {gameInvite && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-[#111111] border-2 border-[#33ff33] p-6 rounded-none"
+            >
+              <GameInvite
+                inviter={gameInvite.inviter}
+                onAccept={() => handleInviteResponse(true)}
+                onDecline={() => handleInviteResponse(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
