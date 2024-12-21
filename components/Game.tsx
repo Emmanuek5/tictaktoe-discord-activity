@@ -323,7 +323,7 @@ function GameComponent({ mode, onBack }: GameProps) {
 
   if (!participants || !currentUser) {
     return (
-      <div className="relative min-h-screen bg-[#000000] text-white flex items-center justify-center overflow-hidden">
+      <div className="relative h-screen bg-[#000000] text-white flex items-center justify-center overflow-hidden">
         {/* Scanline effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
 
@@ -341,9 +341,6 @@ function GameComponent({ mode, onBack }: GameProps) {
 
   return (
     <div className="h-screen bg-[#000000] text-white p-4">
-      {/* Scanline effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
-
       <div className="max-w-6xl mx-auto">
         {/* Back button */}
         <motion.div
