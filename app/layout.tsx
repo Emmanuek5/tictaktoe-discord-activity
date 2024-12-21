@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Roboto_Flex } from "next/font/google";
-import { Press_Start_2P } from "next/font/google";
+import { Silkscreen } from "next/font/google";
 import "./globals.css";
 import { DiscordProvider } from "@/contexts/DiscordContext";
 
 const robotoFlex = Roboto_Flex({ subsets: ["latin"] });
-const arcadeFont = Press_Start_2P({
+const arcadeFont = Silkscreen({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-arcade",
@@ -23,17 +23,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" className={`${arcadeFont.variable}`}>
+    <html lang="en" className={arcadeFont.variable}>
       <head>
         <title>Arcade Tic Tac Toe</title>
       </head>
-      <body
-        className={`${robotoFlex.className} antialiased bg-gradient-to-br from-slate-900 to-slate-800 tracking-tight`}
-      >
+      <body className={`${arcadeFont.className} antialiased`}>
         <DiscordProvider clientId={process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID!}>
           {children}
         </DiscordProvider>

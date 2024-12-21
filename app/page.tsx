@@ -12,6 +12,7 @@ import Game from "@/components/Game";
 import Image from "next/image";
 import Loader from "@/components/Loader";
 import { soundManager } from "@/utils/sounds";
+import { SoundToggle } from "@/components/ui/sound-toggle";
 
 export default function Home() {
   const {
@@ -197,7 +198,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
+    <div className="min-h-screen bg-[#000000] text-white overflow-auto relative">
+      {/* Sound Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <SoundToggle />
+      </div>
+
       <AnimatePresence mode="wait">
         {gameMode === "menu" ? (
           <motion.div
@@ -211,7 +217,7 @@ export default function Home() {
             <motion.div
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-white/10 bg-gradient-to-b from-purple-900/20 to-indigo-900/20 backdrop-blur-sm"
+              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-[#333333] bg-[#000000]"
             >
               <div className="space-y-4 md:space-y-6">
                 {/* User Profile */}
@@ -226,15 +232,14 @@ export default function Home() {
                       width={60}
                       height={60}
                       alt="User Avatar"
-                      className="rounded-full border-2 border-purple-500/50 md:w-20 md:h-20 animate-pulse"
+                      className="rounded-full border-2 border-[#33ff33] md:w-20 md:h-20"
                     />
-                    <div className="absolute inset-0 rounded-full border-2 border-purple-500/50 animate-ping" />
                   </div>
                   <div className="text-left md:text-center">
-                    <h2 className="font-arcade text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                    <h2 className="font-arcade text-base md:text-lg text-[#33ff33]">
                       {currentUser.global_name || currentUser.username}
                     </h2>
-                    <p className="font-arcade text-xs md:text-sm text-white/60">
+                    <p className="font-arcade text-xs text-[#33ff33]/60">
                       {currentGuild?.name} • {currentChannel?.name}
                     </p>
                   </div>
@@ -243,81 +248,88 @@ export default function Home() {
                 {/* Stats */}
                 {userStats && (
                   <div className="space-y-4 md:space-y-6">
-                    <div className="bg-purple-900/20 rounded-lg p-4 md:p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
-                      <h3 className="font-arcade text-sm font-medium mb-3 text-white/70">
-                        Overall Stats
+                    <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                      <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                        PLAYER STATS
                       </h3>
                       <div className="grid grid-cols-2 gap-4 md:gap-6">
                         <div className="text-center">
-                          <p className="font-arcade text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                          <p className="font-arcade text-2xl text-[#ffff00]">
                             {userStats.totalGames}
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            Games Played
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            GAMES
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="font-arcade text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-                            {((userStats.wins / userStats.totalGames) * 100 || 0).toFixed(1)}%
+                          <p className="font-arcade text-2xl text-[#ffff00]">
+                            {(
+                              (userStats.wins / userStats.totalGames) * 100 || 0
+                            ).toFixed(0)}
+                            %
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            Win Rate
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            WIN RATE
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-purple-900/20 rounded-lg p-4 md:p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
-                      <h3 className="font-arcade text-sm font-medium mb-3 text-white/70">
-                        Game Results
+                    <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                      <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                        RESULTS
                       </h3>
                       <div className="grid grid-cols-3 gap-2 md:gap-4">
                         <div className="text-center">
-                          <p className="font-arcade text-xl font-bold text-green-400 animate-pulse">
+                          <p className="font-arcade text-xl text-[#33ff33]">
                             {userStats.wins}
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            Wins
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            WINS
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="font-arcade text-xl font-bold text-red-400 animate-pulse">
+                          <p className="font-arcade text-xl text-[#ff4444]">
                             {userStats.losses}
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            Losses
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            LOSS
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="font-arcade text-xl font-bold text-yellow-400 animate-pulse">
+                          <p className="font-arcade text-xl text-[#ffff00]">
                             {userStats.draws}
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            Draws
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            DRAW
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-purple-900/20 rounded-lg p-4 md:p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
-                      <h3 className="font-arcade text-sm font-medium mb-3 text-white/70">
-                        AI Games
+                    <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                      <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                        CPU BATTLES
                       </h3>
                       <div className="grid grid-cols-2 gap-4 md:gap-6">
                         <div className="text-center">
-                          <p className="font-arcade text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                          <p className="font-arcade text-xl text-[#ffff00]">
                             {userStats.aiGamesPlayed}
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            Games vs AI
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            VS CPU
                           </p>
                         </div>
                         <div className="text-center">
-                          <p className="font-arcade text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
-                            {((userStats.aiWins / userStats.aiGamesPlayed) * 100 || 0).toFixed(1)}%
+                          <p className="font-arcade text-xl text-[#ffff00]">
+                            {(
+                              (userStats.aiWins / userStats.aiGamesPlayed) *
+                                100 || 0
+                            ).toFixed(0)}
+                            %
                           </p>
-                          <p className="font-arcade text-xs md:text-sm text-white/60">
-                            AI Win Rate
+                          <p className="font-arcade text-xs text-[#33ff33]">
+                            CPU WINS
                           </p>
                         </div>
                       </div>
@@ -328,51 +340,51 @@ export default function Home() {
             </motion.div>
 
             {/* Main content */}
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-900/20 via-indigo-900/20 to-pink-900/20">
+            <div className="flex-1 flex items-center justify-center bg-[#000000] bg-opacity-95">
               <div className="max-w-md w-full space-y-12 p-8 md:p-12">
                 <div className="text-center space-y-4">
-                  <h1 className="font-arcade text-5xl relative">
-                    <span className="text-white relative">
+                  <h1 className="font-arcade text-5xl tracking-wide leading-relaxed">
+                    <span className="text-[#00ff00] drop-shadow-[0_0_2px_#00ff00]">
                       TIC TAC
-                      <span className="absolute left-[2px] top-[2px] text-purple-500/50 -z-10">
-                        TIC TAC
-                      </span>
                     </span>{" "}
-                    <span className="text-white relative">
+                    <br />
+                    <span className="text-[#ff0000] drop-shadow-[0_0_2px_#ff0000]">
                       SHOWDOWN
-                      <span className="absolute left-[2px] top-[2px] text-pink-500/50 -z-10">
-                        SHOWDOWN
-                      </span>
                     </span>
                   </h1>
-                  <p className="font-arcade text-lg text-white/60">
-                    CHALLENGE FRIENDS OR TEST YOUR SKILLS
+                  <p className="font-arcade text-sm md:text-base text-[#33ff33] animate-blink">
+                    INSERT COIN TO PLAY
                   </p>
                 </div>
 
                 <div className="space-y-4 md:space-y-6">
                   <Button
                     size="lg"
-                    className="w-full h-16 md:h-20 font-arcade bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 border-2 border-indigo-400/50 hover:border-indigo-400 transition-all duration-300"
+                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#4444ff] text-[#4444ff] hover:bg-[#4444ff] hover:text-black transition-all duration-300"
                     onClick={() => {
                       handleGameModeChange("pvp");
                       soundManager?.playSound("click");
                     }}
                   >
-                    <Users className="w-6 h-6 mr-3" />
-                    Play with Friends
+                    <Users className="w-6 h-6 mr-3" />2 PLAYERS
                   </Button>
                   <Button
                     size="lg"
-                    className="w-full h-16 md:h-20 font-arcade bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 border-2 border-violet-400/50 hover:border-violet-400 transition-all duration-300"
+                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#ff4444] text-[#ff4444] hover:bg-[#ff4444] hover:text-black transition-all duration-300"
                     onClick={() => {
                       handleGameModeChange("ai");
                       soundManager?.playSound("click");
                     }}
                   >
                     <Bot className="w-6 h-6 mr-3" />
-                    Play against AI
+                    VS CPU
                   </Button>
+                </div>
+
+                <div className="text-center">
+                  <p className="font-arcade text-xs text-[#ffff00] animate-pulse">
+                    HIGH SCORE: {userStats?.wins || 0}
+                  </p>
                 </div>
               </div>
             </div>

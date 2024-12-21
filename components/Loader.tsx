@@ -1,38 +1,63 @@
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import Image from "next/image";
 
-const fact = "It's Nearly Impossible To Win Against The AI At Tic Tac Toe";
+const loadingVariants = {
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.5,
+    },
+  },
+  hidden: {
+    opacity: 0,
+  },
+};
 
-export default function Loader({ className }: { className?: string }) {
+const facts = [
+  "PERFECT PLAY LEADS TO A DRAW",
+  "CENTER IS THE STRONGEST MOVE",
+  "CORNERS ARE BETTER THAN EDGES",
+  "THE GAME WAS INVENTED IN 1300BC",
+];
+
+export default function Loader() {
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center w-screen h-screen bg-gradient-to-br from-slate-900 to-slate-800",
-        className
-      )}
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={loadingVariants}
+      className="flex items-center justify-center w-screen h-screen bg-[#000000] relative"
     >
-      <div className="flex flex-col items-center justify-center space-y-4">
-        <div
-          className={cn(
-            "font-arcade text-2xl text-white relative",
-            "after:content-['LOADING'] after:absolute after:left-[2px] after:top-[2px] after:text-purple-500/50",
-            "before:content-['LOADING'] before:absolute before:left-[-2px] before:top-[-2px] before:text-pink-500/50"
-          )}
-        >
-          LOADING
-        </div>
-        <div className="flex space-x-2">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="w-3 h-3 bg-white animate-[blink_1s_ease-in-out_infinite] delay-75"
-              style={{ animationDelay: `${i * 0.3}s` }}
+      {/* Scanline effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
+      
+      <div className="flex flex-col items-center gap-8">
+        <div className="relative">
+          {/* Rotating border */}
+          <div className="absolute inset-0 border-4 border-t-[#33ff33] border-r-[#33ff33]/50 border-b-[#33ff33]/30 border-l-[#33ff33]/10 rounded-full w-[190px] h-[190px] -left-1 -top-1 animate-spin" />
+
+          {/* Logo */}
+          <div className="relative w-[190px] h-[190px] rounded-full overflow-hidden border-4 border-[#33ff33] shadow-[0_0_10px_#33ff33]">
+            <Image
+              src="/loader.gif"
+              alt="Game Logo"
+              width={190}
+              height={190}
+              priority
+              unoptimized
+              className="rounded-full"
             />
-          ))}
+          </div>
         </div>
-        <div className="text-2xl font-bold text-white/90 text-center max-w-md px-4">
-          {fact}
+
+        <div className="font-arcade text-xl text-[#33ff33] text-center max-w-md px-4 animate-pulse">
+          LOADING...
+        </div>
+        
+        <div className="font-arcade text-sm text-[#ffff00] text-center max-w-md px-4">
+          {facts[Math.floor(Math.random() * facts.length)]}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

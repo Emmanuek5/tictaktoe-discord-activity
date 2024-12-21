@@ -20,15 +20,15 @@ export function SoundToggle() {
       whileTap={{ scale: 0.9 }}
     >
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
         onClick={toggleSound}
-        className="fixed top-4 right-4 bg-purple-900/20 hover:bg-purple-900/40 backdrop-blur-sm"
+        className="bg-[#000000] border-2 border-[#33ff33] text-[#33ff33] hover:bg-[#33ff33] hover:text-black transition-all duration-300 w-10 h-10 p-2"
       >
         {isMuted ? (
-          <VolumeX className="h-6 w-6 text-white" />
+          <VolumeX className="h-5 w-5" />
         ) : (
-          <Volume2 className="h-6 w-6 text-white" />
+          <Volume2 className="h-5 w-5" />
         )}
       </Button>
     </motion.div>

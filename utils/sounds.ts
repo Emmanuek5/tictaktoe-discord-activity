@@ -1,7 +1,9 @@
 class SoundManager {
   private sounds: { [key: string]: HTMLAudioElement } = {};
-  private bgMusic: HTMLAudioElement | null = null;
+  private currentTrack: HTMLAudioElement | null = null;
+  private currentTrackIndex: number = 0;
   private isMuted: boolean = false;
+  private readonly NUM_BG_TRACKS = 3; // Number of background tracks available
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -13,12 +15,6 @@ class SoundManager {
         draw: new Audio('/sounds/draw.mp3'),
         invite: new Audio('/sounds/invite.mp3'),
       };
-      
-      this.bgMusic = new Audio('/sounds/background.mp3');
-      if (this.bgMusic) {
-        this.bgMusic.loop = true;
-        this.bgMusic.volume = 0.3;
-      }
     }
   }
 
@@ -30,16 +26,49 @@ class SoundManager {
     }
   }
 
+  private initializeTrack(index: number): HTMLAudioElement {
+    const track = new Audio(`/sounds/background-${index}.mp3`);
+    track.loop = false; // Set to false since we'll handle the cycling
+    track.volume = 0.3;
+    track.addEventListener('ended', () => {
+      this.playNextTrack();
+    });
+    return track;
+  }
+
+  private playNextTrack() {
+    if (this.isMuted) return;
+    
+    // Stop current track if it exists
+    if (this.currentTrack) {
+      this.currentTrack.pause();
+      this.currentTrack.currentTime = 0;
+    }
+
+    // Move to next track index
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % this.NUM_BG_TRACKS;
+
+    // Initialize and play new track
+    this.currentTrack = this.initializeTrack(this.currentTrackIndex + 1);
+    this.currentTrack.play()
+      .catch(err => console.error('Error playing background track:', err));
+  }
+
   startBackgroundMusic() {
-    if (!this.isMuted && this.bgMusic) {
-      this.bgMusic.play().catch(err => console.error('Error playing background music:', err));
+    if (!this.isMuted) {
+      // Start with a random track
+      this.currentTrackIndex = Math.floor(Math.random() * this.NUM_BG_TRACKS);
+      this.currentTrack = this.initializeTrack(this.currentTrackIndex + 1);
+      this.currentTrack.play()
+        .catch(err => console.error('Error playing background music:', err));
     }
   }
 
   stopBackgroundMusic() {
-    if (this.bgMusic) {
-      this.bgMusic.pause();
-      this.bgMusic.currentTime = 0;
+    if (this.currentTrack) {
+      this.currentTrack.pause();
+      this.currentTrack.currentTime = 0;
+      this.currentTrack = null;
     }
   }
 
@@ -60,6 +89,11 @@ class SoundManager {
     } else {
       this.startBackgroundMusic();
     }
+  }
+
+  // Method to manually switch to next track
+  switchTrack() {
+    this.playNextTrack();
   }
 }
 

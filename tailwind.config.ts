@@ -96,17 +96,10 @@ const config = {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0' },
         },
-        'pixel-spin': {
-          '0%': { transform: 'rotate(0deg)' },
-          '25%': { transform: 'rotate(90deg)' },
-          '50%': { transform: 'rotate(180deg)' },
-          '75%': { transform: 'rotate(270deg)' },
-          '100%': { transform: 'rotate(360deg)' },
-        },
-        'scanline': {
-          '0%': { transform: 'translateY(0)' },
+        scanline: {
+          '0%': { transform: 'translateY(-100%)' },
           '100%': { transform: 'translateY(100%)' },
-        }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -114,7 +107,6 @@ const config = {
         'glow': 'glow 1s ease-in-out infinite alternate',
         'arcade-pulse': 'arcade-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blink': 'blink 1s step-end infinite',
-        'pixel-spin': 'pixel-spin 1s steps(4) infinite',
         'scanline': 'scanline 8s linear infinite',
       },
       fontFamily: {
