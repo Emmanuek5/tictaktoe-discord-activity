@@ -12,8 +12,6 @@ import Game from "@/components/Game";
 import Image from "next/image";
 import Loader from "@/components/Loader";
 import { soundManager } from "@/utils/sounds";
-import { SoundToggle } from "@/components/ui/sound-toggle";
-import { ArcadeText } from "@/components/ui/arcade-text";
 
 export default function Home() {
   const {
@@ -50,6 +48,17 @@ export default function Home() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (soundManager) {
+      soundManager.startBackgroundMusic();
+    }
+    return () => {
+      if (soundManager) {
+        soundManager.stopBackgroundMusic();
+      }
+    };
   }, []);
 
   // Handle socket connection
@@ -109,6 +118,17 @@ export default function Home() {
     };
   }, [currentUser?.id, sdk?.channelId]);
 
+  useEffect(() => {
+    if (socket) {
+      socket.on("gameStart", () => soundManager?.playSound("click"));
+      socket.on("moveMade", () => soundManager?.playSound("move"));
+      socket.on("gameWon", () => soundManager?.playSound("win"));
+      socket.on("gameLost", () => soundManager?.playSound("lose"));
+      socket.on("gameDraw", () => soundManager?.playSound("draw"));
+      socket.on("gameInvite", () => soundManager?.playSound("invite"));
+    }
+  }, [socket]);
+
   // Handle session state updates
   useEffect(() => {
     if (!socket) return;
@@ -141,28 +161,6 @@ export default function Home() {
     };
   }, [socket]);
 
-  useEffect(() => {
-    if (soundManager) {
-      soundManager.startBackgroundMusic();
-    }
-    return () => {
-      if (soundManager) {
-        soundManager.stopBackgroundMusic();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (socket) {
-      socket.on("gameStart", () => soundManager?.playSound("click"));
-      socket.on("moveMade", () => soundManager?.playSound("move"));
-      socket.on("gameWon", () => soundManager?.playSound("win"));
-      socket.on("gameLost", () => soundManager?.playSound("lose"));
-      socket.on("gameDraw", () => soundManager?.playSound("draw"));
-      socket.on("gameInvite", () => soundManager?.playSound("invite"));
-    }
-  }, [socket]);
-
   const handleInviteResponse = async (accepted: boolean) => {
     if (!socket || !gameInvite) return;
 
@@ -182,17 +180,13 @@ export default function Home() {
   };
 
   if (isLoading || !currentUser) {
-    return (
-      <div className="flex items-center justify-center">
-        <Loader />
-      </div>
-    );
+    return <Loader />;
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center">
-        <ArcadeText className="text-red-500">Error: {error.message}</ArcadeText>
+      <div className="h-screen flex items-center justify-center bg-[#0f1117]">
+        <div className="text-red-500 text-2xl">Error: {error.message}</div>
       </div>
     );
   }
@@ -203,74 +197,216 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-arcade-gradient">
-      <SoundToggle />
+    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
+      <AnimatePresence mode="wait">
+        {gameMode === "menu" ? (
+          <motion.div
+            key="menu"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="min-h-screen flex flex-col md:flex-row"
+          >
+            {/* Left sidebar with user stats */}
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-white/10 bg-gradient-to-b from-purple-900/20 to-indigo-900/20 backdrop-blur-sm"
+            >
+              <div className="space-y-4 md:space-y-6">
+                {/* User Profile */}
+                <div className="flex md:flex-col items-center space-x-4 md:space-x-0 md:space-y-4">
+                  <div className="relative">
+                    <Image
+                      src={
+                        currentUser?.avatar
+                          ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
+                          : "https://cdn.discordapp.com/embed/avatars/0.png"
+                      }
+                      width={60}
+                      height={60}
+                      alt="User Avatar"
+                      className="rounded-full border-2 border-purple-500/50 md:w-20 md:h-20 animate-pulse"
+                    />
+                    <div className="absolute inset-0 rounded-full border-2 border-purple-500/50 animate-ping" />
+                  </div>
+                  <div className="text-left md:text-center">
+                    <h2 className="font-arcade text-base md:text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                      {currentUser.global_name || currentUser.username}
+                    </h2>
+                    <p className="font-arcade text-xs md:text-sm text-white/60">
+                      {currentGuild?.name} • {currentChannel?.name}
+                    </p>
+                  </div>
+                </div>
 
-      {gameMode === "menu" ? (
-        <div className="space-y-6 text-center">
-          <ArcadeText size="lg" glowColor="#4f46e5">
-            TIC TAC TOE
-          </ArcadeText>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button
-              onClick={() => {
-                setGameMode("ai");
+                {/* Stats */}
+                {userStats && (
+                  <div className="space-y-4 md:space-y-6">
+                    <div className="bg-purple-900/20 rounded-lg p-4 md:p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+                      <h3 className="font-arcade text-sm font-medium mb-3 text-white/70">
+                        Overall Stats
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 md:gap-6">
+                        <div className="text-center">
+                          <p className="font-arcade text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                            {userStats.totalGames}
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            Games Played
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-arcade text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                            {((userStats.wins / userStats.totalGames) * 100 || 0).toFixed(1)}%
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            Win Rate
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-900/20 rounded-lg p-4 md:p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+                      <h3 className="font-arcade text-sm font-medium mb-3 text-white/70">
+                        Game Results
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2 md:gap-4">
+                        <div className="text-center">
+                          <p className="font-arcade text-xl font-bold text-green-400 animate-pulse">
+                            {userStats.wins}
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            Wins
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-arcade text-xl font-bold text-red-400 animate-pulse">
+                            {userStats.losses}
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            Losses
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-arcade text-xl font-bold text-yellow-400 animate-pulse">
+                            {userStats.draws}
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            Draws
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-purple-900/20 rounded-lg p-4 md:p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+                      <h3 className="font-arcade text-sm font-medium mb-3 text-white/70">
+                        AI Games
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 md:gap-6">
+                        <div className="text-center">
+                          <p className="font-arcade text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                            {userStats.aiGamesPlayed}
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            Games vs AI
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-arcade text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                            {((userStats.aiWins / userStats.aiGamesPlayed) * 100 || 0).toFixed(1)}%
+                          </p>
+                          <p className="font-arcade text-xs md:text-sm text-white/60">
+                            AI Win Rate
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Main content */}
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-900/20 via-indigo-900/20 to-pink-900/20">
+              <div className="max-w-md w-full space-y-12 p-8 md:p-12">
+                <div className="text-center space-y-4">
+                  <h1 className="font-arcade text-5xl font-bold animate-glow">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
+                      Tic Tac
+                    </span>{" "}
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">
+                      Showdown
+                    </span>
+                  </h1>
+                  <p className="font-arcade text-lg md:text-xl text-white/60">
+                    Challenge friends or test your skills against AI
+                  </p>
+                </div>
+
+                <div className="space-y-4 md:space-y-6">
+                  <Button
+                    size="lg"
+                    className="w-full h-16 md:h-20 font-arcade bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 border-2 border-indigo-400/50 hover:border-indigo-400 transition-all duration-300"
+                    onClick={() => {
+                      handleGameModeChange("pvp");
+                      soundManager?.playSound("click");
+                    }}
+                  >
+                    <Users className="w-6 h-6 mr-3" />
+                    Play with Friends
+                  </Button>
+                  <Button
+                    size="lg"
+                    className="w-full h-16 md:h-20 font-arcade bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 border-2 border-violet-400/50 hover:border-violet-400 transition-all duration-300"
+                    onClick={() => {
+                      handleGameModeChange("ai");
+                      soundManager?.playSound("click");
+                    }}
+                  >
+                    <Bot className="w-6 h-6 mr-3" />
+                    Play against AI
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="game"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="h-full"
+          >
+            <Game
+              mode={gameMode === "ai" ? "ai" : "pvp"}
+              onBack={() => {
+                handleGameModeChange("menu");
                 soundManager?.playSound("click");
               }}
-              className="w-full p-6 text-xl font-arcade bg-purple-900/20 hover:bg-purple-900/40 backdrop-blur-sm border-2 border-purple-500/50 hover:border-purple-500 transition-all duration-300"
-            >
-              Play vs AI
-            </Button>
-            <Button
-              onClick={() => {
-                setGameMode("pvp");
-                soundManager?.playSound("click");
-              }}
-              className="w-full p-6 text-xl font-arcade bg-purple-900/20 hover:bg-purple-900/40 backdrop-blur-sm border-2 border-purple-500/50 hover:border-purple-500 transition-all duration-300"
-            >
-              Play vs Player
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <motion.div
-          key="game"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="h-full"
-        >
-          <Game
-            mode={gameMode === "ai" ? "ai" : "pvp"}
-            onBack={() => handleGameModeChange("menu")}
-          />
-        </motion.div>
-      )}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Game Invite Modal */}
       <AnimatePresence>
         {gameInvite && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-[#1a1b26] p-6 rounded-xl border border-white/10 shadow-xl"
-            >
-              <GameInvite
-                inviter={gameInvite.inviter}
-                onAccept={() => handleInviteResponse(true)}
-                onDecline={() => handleInviteResponse(false)}
-              />
-            </motion.div>
+            <GameInvite
+              inviter={gameInvite.inviter}
+              onAccept={() => handleInviteResponse(true)}
+              onDecline={() => handleInviteResponse(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
+    </div>
   );
 }
