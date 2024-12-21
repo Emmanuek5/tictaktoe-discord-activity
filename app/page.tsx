@@ -403,6 +403,7 @@ export default function Home() {
                 handleGameModeChange("menu");
                 soundManager?.playSound("click");
               }}
+              inviteData={gameInvite!}
             />
           </motion.div>
         )}
