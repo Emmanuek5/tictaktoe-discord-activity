@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-const config: Config = {
+const config = {
   darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
@@ -92,56 +92,13 @@ const config: Config = {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.5' },
         },
-      
+        blink: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
         scanline: {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-        flicker: {
-          "0%, 100%": { opacity: "0.03" },
-          "50%": { opacity: "0.04" },
-        },
-        "gradient-y": {
-          "0%, 100%": {
-            "background-size": "400% 400%",
-            "background-position": "center top",
-          },
-          "50%": {
-            "background-size": "200% 200%",
-            "background-position": "center center",
-          },
-        },
-        "gradient-x": {
-          "0%, 100%": {
-            "background-size": "200% 200%",
-            "background-position": "left center",
-          },
-          "50%": {
-            "background-size": "200% 200%",
-            "background-position": "right center",
-          },
-        },
-        "gradient-xy": {
-          "0%, 100%": {
-            "background-size": "400% 400%",
-            "background-position": "left center",
-          },
-          "50%": {
-            "background-size": "200% 200%",
-            "background-position": "right center",
-          },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0) rotate(0)" },
-          "50%": { transform: "translateY(-20px) rotate(180deg)" },
-        },
-        pulse: {
-          "0%, 100%": { opacity: "0.1", transform: "scale(1)" },
-          "50%": { opacity: "0.2", transform: "scale(1.1)" },
-        },
-        scan: {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
+          '0%': { transform: 'translateY(-100%)' },
+          '100%': { transform: 'translateY(100%)' },
         },
       },
       animation: {
@@ -151,17 +108,6 @@ const config: Config = {
         'arcade-pulse': 'arcade-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blink': 'blink 1s step-end infinite',
         'scanline': 'scanline 8s linear infinite',
-        'flicker': 'flicker 0.2s infinite',
-        "gradient-x": "gradient-x 15s ease infinite",
-        "gradient-y": "gradient-y 15s ease infinite",
-        "gradient-xy": "gradient-xy 15s ease infinite",
-        "float-slow": "float 8s ease-in-out infinite",
-        "float-medium": "float 6s ease-in-out infinite",
-        "float-fast": "float 4s ease-in-out infinite",
-        "pulse-slow": "pulse 6s ease-in-out infinite",
-        "pulse-medium": "pulse 4s ease-in-out infinite",
-        scan: "scan 2s linear infinite",
-      
       },
       fontFamily: {
         arcade: ["Press Start 2P", "cursive"],
@@ -172,6 +118,6 @@ const config: Config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-};
+} satisfies Config;
 
 export default config;

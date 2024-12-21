@@ -1,7 +1,8 @@
 import { GameState } from "../server/types";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { soundManager } from "@/utils/sounds";
+import { Button } from "./ui/button";
+
 interface GameBoardProps {
   gameState: GameState;
   currentUserId: string;
@@ -28,14 +29,9 @@ export function GameBoard({
         gameState.players[
           gameState.winner as keyof typeof gameState.players
         ] === currentUserId;
-
-      soundManager?.playSound(isWinner ? "win" : "lose");
       return isWinner ? "🎉 You Won!" : "😔 You Lost";
     }
-    if (gameState.isDraw) {
-      soundManager?.playSound("draw");
-      return "🤝 It's a Draw!";
-    }
+    if (gameState.isDraw) return "🤝 It's a Draw!";
     if (gameState.isAIGame && gameState.currentPlayer === "O")
       return "🤖 AI is thinking...";
     return isPlayerTurn ? "🎮 Your Turn!" : "⏳ Opponent's Turn";
@@ -43,101 +39,108 @@ export function GameBoard({
 
   const handleCellClick = (index: number) => {
     onMove(index);
-    soundManager?.playSound("click");
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 md:gap-6 p-4 md:p-0">
-      <div className="text-lg md:text-xl font-bold text-white text-center">
+    <div className="flex flex-col items-center gap-4 max-h-full p-4">
+      <div className="text-lg md:text-xl font-bold text-white text-center font-arcade">
         {getStatusMessage()}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-[min(90vw,400px)]">
+      <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-[min(80vh,400px)] relative">
+        {/* Winning line overlay */}
+        {gameState.winningLine && (
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className={cn(
+              "absolute bg-[#33ff33] h-1 z-10 transform origin-left",
+              {
+                // Horizontal lines
+                "top-[16.67%] w-full": gameState.winningLine[0] === 0,
+                "top-[50%] w-full": gameState.winningLine[0] === 3,
+                "top-[83.33%] w-full": gameState.winningLine[0] === 6,
+                // Vertical lines
+                "left-[16.67%] w-1 h-full rotate-90":
+                  gameState.winningLine[0] === 0 &&
+                  gameState.winningLine[1] === 3,
+                "left-[50%] w-1 h-full rotate-90":
+                  gameState.winningLine[0] === 1 &&
+                  gameState.winningLine[1] === 4,
+                "left-[83.33%] w-1 h-full rotate-90":
+                  gameState.winningLine[0] === 2 &&
+                  gameState.winningLine[1] === 5,
+                // Diagonal lines
+                "w-[141%] rotate-45 origin-top-left":
+                  gameState.winningLine[0] === 0 &&
+                  gameState.winningLine[1] === 4,
+                "w-[141%] -rotate-45 origin-top-right":
+                  gameState.winningLine[0] === 2 &&
+                  gameState.winningLine[1] === 4,
+              }
+            )}
+          />
+        )}
+
         {gameState.board.map((cell, index) => (
-          <button
+          <motion.button
             key={index}
             onClick={() => handleCellClick(index)}
             disabled={
               cell !== null ||
-              gameState.players[
-                gameState.currentPlayer as keyof typeof gameState.players
-              ] !== currentUserId ||
-              gameState.winner !== null ||
-              gameState.isDraw
+              !isPlayerTurn ||
+              isGameOver ||
+              (gameState.isAIGame && gameState.currentPlayer === "O")
             }
-            className={`
-              aspect-square flex items-center justify-center
-              text-2xl md:text-4xl font-bold rounded-lg
-              ${
-                cell === null &&
-                gameState.players[
-                  gameState.currentPlayer as keyof typeof gameState.players
-                ] === currentUserId &&
-                !gameState.winner &&
-                !gameState.isDraw
-                  ? "bg-indigo-500/20 hover:bg-indigo-500/30 border-2 border-indigo-500/30"
-                  : "bg-[#1a1b26] border-2 border-white/10"
+            className={cn(
+              "aspect-square bg-[#111111] border-2 text-4xl md:text-6xl font-bold",
+              "transition-colors duration-200 flex items-center justify-center",
+              "hover:bg-[#222222] disabled:hover:bg-[#111111]",
+              {
+                "border-[#33ff33]": !cell,
+                "border-[#ffff33]": cell === "X",
+                "border-[#ff3333]": cell === "O",
+                "cursor-not-allowed": !isPlayerTurn || isGameOver,
               }
-              ${
-                gameState.winningLine?.includes(index)
-                  ? "bg-green-500/20 border-green-500/30"
-                  : ""
-              }
-              transition-all duration-200
-            `}
-          >
-            {cell === "X" ? (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="text-indigo-400"
-              >
-                X
-              </motion.span>
-            ) : cell === "O" ? (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="text-violet-400"
-              >
-                O
-              </motion.span>
-            ) : (
-              <span className="text-transparent">·</span>
             )}
-          </button>
+            whileHover={
+              !cell && isPlayerTurn && !isGameOver ? { scale: 1.05 } : {}
+            }
+            whileTap={
+              !cell && isPlayerTurn && !isGameOver ? { scale: 0.95 } : {}
+            }
+          >
+            {cell && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className={cn({
+                  "text-[#ffff33]": cell === "X",
+                  "text-[#ff3333]": cell === "O",
+                })}
+              >
+                {cell}
+              </motion.span>
+            )}
+          </motion.button>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm justify-center">
-        <div
-          className={cn(
-            "px-3 md:px-4 py-2 rounded-full",
-            playerSymbol === "X" ? "bg-game-purple/20" : "bg-game-blue-light/20"
-          )}
-        >
-          You: {playerSymbol}
-        </div>
-        <div
-          className={cn(
-            "px-3 md:px-4 py-2 rounded-full",
-            gameState.currentPlayer === "X"
-              ? "bg-game-purple/20"
-              : "bg-game-blue-light/20"
-          )}
-        >
-          Current Turn: {gameState.currentPlayer}
-        </div>
-      </div>
-
       {isGameOver && (
-        <button
-          onClick={onReset}
-          className="mt-2 md:mt-4 px-4 md:px-6 py-2 bg-game-purple hover:bg-game-purple/80 text-white rounded-lg 
-            transition-colors font-semibold text-sm md:text-base"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4"
         >
-          Play Again
-        </button>
+          <Button
+            onClick={onReset}
+            className="font-arcade text-[#33ff33] border-[#33ff33] hover:bg-[#33ff33]/10"
+            variant="outline"
+          >
+            PLAY AGAIN
+          </Button>
+        </motion.div>
       )}
     </div>
   );
