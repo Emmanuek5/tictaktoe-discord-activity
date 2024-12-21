@@ -279,6 +279,7 @@ function GameComponent({ mode, onBack }: GameProps) {
 
       socket.emit("move", {
         position,
+        roomId: sdk?.channelId,
         player: playerRole,
         gameId,
         channelId: sdk?.channelId,
