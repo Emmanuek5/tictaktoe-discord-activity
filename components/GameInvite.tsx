@@ -1,5 +1,6 @@
 import { DiscordParticipant } from "@/types/discord";
-import Image from "next/image";
+import { Users } from "lucide-react";
+import { soundManager } from "@/utils/sounds";
 
 interface GameInviteProps {
   inviter: DiscordParticipant;
@@ -8,47 +9,55 @@ interface GameInviteProps {
 }
 
 export function GameInvite({ inviter, onAccept, onDecline }: GameInviteProps) {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-game-blue-dark rounded-xl p-6 max-w-md w-full space-y-6 animate-in fade-in slide-in-from-bottom-4">
-        <div className="flex items-center space-x-4">
-          <Image
-            src={
-              inviter.avatar
-                ? `https://cdn.discordapp.com/avatars/${inviter.id}/${inviter.avatar}.png`
-                : "https://cdn.discordapp.com/embed/avatars/0.png"
-            }
-            width={64}
-            height={64}
-            alt={"Inviter Avatar"}
-            className="rounded-full"
-          />
-          <div>
-            <h3 className="text-xl font-bold text-white">
-              Game Invitation
-            </h3>
-            <p className="text-gray-300">
-              {inviter.global_name || inviter.username} wants to play with you!
-            </p>
-          </div>
-        </div>
+  const handleAccept = () => {
+    soundManager?.playSound("click");
+    onAccept();
+  };
 
-        <div className="flex gap-4">
-          <button
-            onClick={onAccept}
-            className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg 
-              transition-colors font-semibold"
-          >
-            Accept
-          </button>
-          <button
-            onClick={onDecline}
-            className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg 
-              transition-colors font-semibold"
-          >
-            Decline
-          </button>
+  const handleDecline = () => {
+    soundManager?.playSound("click");
+    onDecline();
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-6 min-w-[300px]">
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#33ff33] bg-[#111111] flex items-center justify-center">
+          {inviter.avatar ? (
+            <img
+              src={`https://cdn.discordapp.com/avatars/${inviter.id}/${inviter.avatar}.png`}
+              alt={inviter.username}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Users className="w-10 h-10 text-[#33ff33]" />
+          )}
         </div>
+        <div className="flex flex-col gap-1">
+          <h3 className="font-arcade text-[#33ff33] text-xl">
+            GAME INVITE
+          </h3>
+          <p className="font-arcade text-[#33ff33]/80">
+            {inviter.global_name || inviter.username}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-4 w-full">
+        <button
+          onClick={handleAccept}
+          className="flex-1 px-4 py-2 bg-[#111111] border-2 border-[#33ff33] text-[#33ff33] 
+            hover:bg-[#33ff33] hover:text-black transition-colors font-arcade"
+        >
+          ACCEPT
+        </button>
+        <button
+          onClick={handleDecline}
+          className="flex-1 px-4 py-2 bg-[#111111] border-2 border-[#ff3333] text-[#ff3333]
+            hover:bg-[#ff3333] hover:text-black transition-colors font-arcade"
+        >
+          DECLINE
+        </button>
       </div>
     </div>
   );
