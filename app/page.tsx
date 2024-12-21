@@ -331,16 +331,22 @@ export default function Home() {
             <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-purple-900/20 via-indigo-900/20 to-pink-900/20">
               <div className="max-w-md w-full space-y-12 p-8 md:p-12">
                 <div className="text-center space-y-4">
-                  <h1 className="font-arcade text-5xl font-bold animate-glow">
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
-                      Tic Tac
+                  <h1 className="font-arcade text-5xl relative">
+                    <span className="text-white relative">
+                      TIC TAC
+                      <span className="absolute left-[2px] top-[2px] text-purple-500/50 -z-10">
+                        TIC TAC
+                      </span>
                     </span>{" "}
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">
-                      Showdown
+                    <span className="text-white relative">
+                      SHOWDOWN
+                      <span className="absolute left-[2px] top-[2px] text-pink-500/50 -z-10">
+                        SHOWDOWN
+                      </span>
                     </span>
                   </h1>
-                  <p className="font-arcade text-lg md:text-xl text-white/60">
-                    Challenge friends or test your skills against AI
+                  <p className="font-arcade text-lg text-white/60">
+                    CHALLENGE FRIENDS OR TEST YOUR SKILLS
                   </p>
                 </div>
 
