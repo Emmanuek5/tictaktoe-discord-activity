@@ -182,7 +182,6 @@ function GameComponent({ mode, onBack, inviteData }: GameProps) {
         setWaitingForResponse(false);
       } else {
         setWaitingForResponse(false);
-        alert("Player declined your invitation");
       }
     });
 
