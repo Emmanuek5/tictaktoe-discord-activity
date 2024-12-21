@@ -28,9 +28,14 @@ export function GameBoard({
         gameState.players[
           gameState.winner as keyof typeof gameState.players
         ] === currentUserId;
+
+      soundManager?.playSound(isWinner ? "win" : "lose");
       return isWinner ? "🎉 You Won!" : "😔 You Lost";
     }
-    if (gameState.isDraw) return "🤝 It's a Draw!";
+    if (gameState.isDraw) {
+      soundManager?.playSound("draw");
+      return "🤝 It's a Draw!";
+    }
     if (gameState.isAIGame && gameState.currentPlayer === "O")
       return "🤖 AI is thinking...";
     return isPlayerTurn ? "🎮 Your Turn!" : "⏳ Opponent's Turn";

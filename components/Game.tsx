@@ -216,14 +216,6 @@ function GameComponent({ mode, onBack }: GameProps) {
     setWaitingForResponse(false);
 
     // Play appropriate sound for game end
-    if (state.winner) {
-      const isWinner =
-        state.players[state.winner as keyof typeof state.players] ===
-        currentUser?.id;
-      soundManager?.playSound(isWinner ? "win" : "lose");
-    } else if (state.isDraw) {
-      soundManager?.playSound("draw");
-    }
 
     // Handle AI's turn with timing that matches server
     if (
@@ -328,23 +320,6 @@ function GameComponent({ mode, onBack }: GameProps) {
     },
     [socket, gameInvite, currentUser?.id, sdk?.channelId]
   );
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && socket) {
-        console.log("Tab hidden, cleaning up socket");
-        socket.disconnect();
-      } else if (!document.hidden && !socket?.connected) {
-        console.log("Tab visible, reconnecting socket");
-        socket?.connect();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [socket]);
 
   if (!participants || !currentUser) {
     return (
