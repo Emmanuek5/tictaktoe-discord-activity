@@ -96,9 +96,10 @@ function GameComponent({ mode, onBack }: GameProps) {
       path: "/.proxy/socket",
       transports: ["websocket", "polling"],
       query: {
-        channelId: sdk.channelId,
         userId: currentUser.id,
         username: currentUser.username,
+        avatar: currentUser.avatar,
+        global_name: currentUser.global_name,
       },
       timeout: 5000,
     });
@@ -106,7 +107,7 @@ function GameComponent({ mode, onBack }: GameProps) {
     setSocket(newSocket);
 
     newSocket.onAny((eventName, ...args) => {
-      console.log(eventName, args);
+      console.log("Socket Event:", eventName, args);
     });
 
     newSocket.on("connect", () => {
@@ -122,18 +123,29 @@ function GameComponent({ mode, onBack }: GameProps) {
     newSocket.on(
       "sessionState",
       ({ participants, gameState, availableForGame }) => {
+        console.log("Received session state:", {
+          participants,
+          gameState,
+          availableForGame,
+          isAIGame,
+        });
+
         if (isAIGame) {
           setParticipants({
-            participants: [...participants, AI_PARTICIPANT],
+            participants: [...(participants || []), AI_PARTICIPANT],
           });
+          setAvailablePlayers([AI_PARTICIPANT]);
         } else {
-          setParticipants({ participants });
+          setParticipants({ participants: participants || [] });
+          setAvailablePlayers(availableForGame || []);
         }
 
-        if (gameState) setGameState(gameState);
-        setAvailablePlayers(availableForGame || []);
+        if (gameState) {
+          setGameId(gameState.gameId);
+          setGameState(gameState);
+        }
 
-        if (!isAIGame && availableForGame.length === 0) {
+        if (!isAIGame && (!availableForGame || availableForGame.length === 0)) {
           setSessionError("Waiting for other players to join...");
         } else {
           setSessionError(null);
@@ -143,13 +155,8 @@ function GameComponent({ mode, onBack }: GameProps) {
 
     newSocket.on(
       "gameState",
-      ({
-        gameId: newGameId,
-        state,
-      }: {
-        gameId: string;
-        state: GameState | null;
-      }) => {
+      ({ gameId: newGameId, state }) => {
+        console.log("Received game state:", { newGameId, state });
         setGameId(newGameId);
         setGameState(state);
         setWaitingForResponse(false);
@@ -157,10 +164,12 @@ function GameComponent({ mode, onBack }: GameProps) {
     );
 
     newSocket.on("gameInvite", ({ inviter, inviteId }) => {
+      console.log("Received game invite:", { inviter, inviteId });
       setGameInvite({ inviter, inviteId });
     });
 
     newSocket.on("inviteResponse", ({ accepted, inviterId }) => {
+      console.log("Received invite response:", { accepted, inviterId });
       if (accepted) {
         setWaitingForResponse(false);
       } else {
@@ -169,9 +178,19 @@ function GameComponent({ mode, onBack }: GameProps) {
       }
     });
 
+    newSocket.on("disconnect", () => {
+      console.log("Socket disconnected");
+      setSessionError("Connection lost. Reconnecting...");
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+      setSessionError("Connection error. Retrying...");
+    });
+
     return () => {
       if (newSocket) {
-        console.log("Disconnecting socket...");
+        console.log("Cleaning up socket connection");
         newSocket.disconnect();
       }
       setGameState(null);
@@ -192,8 +211,8 @@ function GameComponent({ mode, onBack }: GameProps) {
       socket.emit("move", {
         position,
         player: playerRole,
-        roomId: sdk?.channelId,
         gameId,
+        channelId: sdk?.channelId,
       });
     },
     [socket, gameState, currentUser, sdk?.channelId, gameId]
