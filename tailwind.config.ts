@@ -92,10 +92,7 @@ const config: Config = {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.5' },
         },
-        blink: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0' },
-        },
+      
         scanline: {
           "0%": { transform: "translateY(-100%)" },
           "100%": { transform: "translateY(100%)" },
@@ -164,7 +161,7 @@ const config: Config = {
         "pulse-slow": "pulse 6s ease-in-out infinite",
         "pulse-medium": "pulse 4s ease-in-out infinite",
         scan: "scan 2s linear infinite",
-        blink: "blink 1.4s step-end infinite",
+      
       },
       fontFamily: {
         arcade: ["Press Start 2P", "cursive"],
