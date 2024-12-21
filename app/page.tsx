@@ -198,233 +198,155 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white overflow-auto relative">
-      {/* Sound Toggle */}
-      <div className="absolute top-4 right-4 z-50">
-        <SoundToggle />
+    <div className="relative min-h-screen bg-[#000000] text-white overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-[url('/grid.png')] opacity-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/5 to-transparent opacity-50 animate-pulse" />
+      
+      {/* Arcade decorations */}
+      <div className="absolute top-0 left-0 w-32 h-32 bg-[#33ff33]/10 rounded-full blur-3xl animate-float" />
+      <div className="absolute bottom-0 right-0 w-48 h-48 bg-[#33ff33]/10 rounded-full blur-3xl animate-float-delayed" />
+      <div className="absolute top-1/4 right-1/4 w-24 h-24 bg-[#ffff33]/10 rounded-full blur-3xl animate-float" />
+      
+      {/* Scanline effect */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
+
+      {/* Glitch text effects */}
+      <div className="absolute top-10 left-10 font-arcade text-[#33ff33]/20 text-6xl animate-glitch select-none">
+        X O X
+      </div>
+      <div className="absolute bottom-10 right-10 font-arcade text-[#33ff33]/20 text-6xl animate-glitch-delayed select-none">
+        O X O
       </div>
 
-      <AnimatePresence mode="wait">
+      {/* Main content */}
+      <div className="relative h-full flex flex-col items-center justify-center p-4">
+        {/* Game title */}
+        <div className="text-center mb-12">
+          <h1 className="font-arcade text-6xl md:text-8xl bg-clip-text text-transparent bg-gradient-to-b from-[#33ff33] to-[#33ff33]/50 animate-glow">
+            TIC TAC TOE
+          </h1>
+          <div className="font-arcade text-[#33ff33] mt-2 animate-pulse">
+            DISCORD ARCADE
+          </div>
+        </div>
+
         {gameMode === "menu" ? (
           <motion.div
-            key="menu"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="min-h-screen flex flex-col md:flex-row"
+            className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 p-4"
           >
-            {/* Left sidebar with user stats */}
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-[#333333] bg-[#000000]"
-            >
-              <div className="space-y-4 md:space-y-6">
-                {/* User Profile */}
-                <div className="flex md:flex-col items-center space-x-4 md:space-x-0 md:space-y-4">
-                  <div className="relative">
-                    <Image
-                      src={
-                        currentUser?.avatar
-                          ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
-                          : "https://cdn.discordapp.com/embed/avatars/0.png"
-                      }
-                      width={60}
-                      height={60}
-                      alt="User Avatar"
-                      className="rounded-full border-2 border-[#33ff33] md:w-20 md:h-20"
-                    />
+            {/* Stats cards */}
+            <div className="space-y-6">
+              <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                  PLAYER STATS
+                </h3>
+                <div className="grid grid-cols-2 gap-4 md:gap-6">
+                  <div className="text-center">
+                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                      {userStats.totalGames}
+                    </p>
+                    <p className="font-arcade text-xs text-[#33ff33]">
+                      TOTAL GAMES
+                    </p>
                   </div>
-                  <div className="text-left md:text-center">
-                    <h2 className="font-arcade text-base md:text-lg text-[#33ff33]">
-                      {currentUser.global_name || currentUser.username}
-                    </h2>
-                    <p className="font-arcade text-xs text-[#33ff33]/60">
-                      {currentGuild?.name} • {currentChannel?.name}
+                  <div className="text-center">
+                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                      {userStats.winRate}%
+                    </p>
+                    <p className="font-arcade text-xs text-[#33ff33]">
+                      WIN RATE
                     </p>
                   </div>
                 </div>
-
-                {/* Stats */}
-                {userStats && (
-                  <div className="space-y-4 md:space-y-6">
-                    <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
-                      <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                        PLAYER STATS
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 md:gap-6">
-                        <div className="text-center">
-                          <p className="font-arcade text-2xl text-[#ffff00]">
-                            {userStats.totalGames}
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            GAMES
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-arcade text-2xl text-[#ffff00]">
-                            {(
-                              (userStats.wins / userStats.totalGames) * 100 || 0
-                            ).toFixed(0)}
-                            %
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            WIN RATE
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
-                      <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                        RESULTS
-                      </h3>
-                      <div className="grid grid-cols-3 gap-2 md:gap-4">
-                        <div className="text-center">
-                          <p className="font-arcade text-xl text-[#33ff33]">
-                            {userStats.wins}
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            WINS
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-arcade text-xl text-[#ff4444]">
-                            {userStats.losses}
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            LOSS
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-arcade text-xl text-[#ffff00]">
-                            {userStats.draws}
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            DRAW
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
-                      <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                        AI BATTLES
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 md:gap-6">
-                        <div className="text-center">
-                          <p className="font-arcade text-xl text-[#ffff00]">
-                            {userStats.aiGamesPlayed}
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            VS AI
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="font-arcade text-xl text-[#ffff00]">
-                            {(
-                              (userStats.aiWins / userStats.aiGamesPlayed) *
-                                100 || 0
-                            ).toFixed(0)}
-                            %
-                          </p>
-                          <p className="font-arcade text-xs text-[#33ff33]">
-                            AI WINS
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
-            </motion.div>
 
-            {/* Main content */}
-            <div className="flex-1 flex items-center justify-center bg-[#000000] bg-opacity-95">
-              <div className="max-w-md w-full space-y-12 p-8 md:p-12">
-                <div className="text-center space-y-4">
-                  <h1 className="font-arcade text-5xl tracking-wide leading-relaxed">
-                    <span className="text-[#00ff00] drop-shadow-[0_0_2px_#00ff00]">
-                      TIC TAC
-                    </span>{" "}
-                    <br />
-                    <span className="text-[#ff0000] drop-shadow-[0_0_2px_#ff0000]">
-                      SHOWDOWN
-                    </span>
-                  </h1>
-                  <p className="font-arcade text-sm md:text-base text-[#33ff33] animate-blink">
-                    INSERT COIN TO PLAY
-                  </p>
+              <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                  AI BATTLES
+                </h3>
+                <div className="grid grid-cols-2 gap-4 md:gap-6">
+                  <div className="text-center">
+                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                      {userStats.aiGamesPlayed}
+                    </p>
+                    <p className="font-arcade text-xs text-[#33ff33]">
+                      VS AI
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                      {userStats.aiWinRate}%
+                    </p>
+                    <p className="font-arcade text-xs text-[#33ff33]">
+                      AI WINS
+                    </p>
+                  </div>
                 </div>
+              </div>
 
-                <div className="space-y-4 md:space-y-6">
-                  <Button
-                    size="lg"
-                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#4444ff] text-[#4444ff] hover:bg-[#4444ff] hover:text-black transition-all duration-300"
-                    onClick={() => {
-                      handleGameModeChange("pvp");
-                      soundManager?.playSound("click");
-                    }}
-                  >
-                    <Users className="w-6 h-6 mr-3" />2 PLAYERS
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="w-full h-16 md:h-20 font-arcade text-lg bg-[#000000] border-2 border-[#ff4444] text-[#ff4444] hover:bg-[#ff4444] hover:text-black transition-all duration-300"
-                    onClick={() => {
-                      handleGameModeChange("ai");
-                      soundManager?.playSound("click");
-                    }}
-                  >
-                    <Bot className="w-6 h-6 mr-3" />
-                    VS AI
-                  </Button>
-                </div>
-
-                <div className="text-center">
-                  <p className="font-arcade text-xs text-[#ffff00] animate-pulse">
-                    HIGH SCORE: {userStats?.wins || 0}
-                  </p>
+              <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
+                <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
+                  PVP MATCHES
+                </h3>
+                <div className="grid grid-cols-2 gap-4 md:gap-6">
+                  <div className="text-center">
+                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                      {userStats.pvpGamesPlayed}
+                    </p>
+                    <p className="font-arcade text-xs text-[#33ff33]">
+                      VS PLAYERS
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="font-arcade text-2xl md:text-3xl text-[#33ff33]">
+                      {userStats.pvpWinRate}%
+                    </p>
+                    <p className="font-arcade text-xs text-[#33ff33]">
+                      PVP WINS
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Game modes */}
+            <div className="flex flex-col justify-center gap-4">
+              <div className="font-arcade text-xl text-[#33ff33] mb-4 text-center">
+                SELECT MODE
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                className="font-arcade text-[#33ff33] border-[#33ff33] hover:bg-[#33ff33]/10 h-16"
+                onClick={() => {
+                  handleGameModeChange("pvp");
+                  soundManager?.playSound("click");
+                }}
+              >
+                <Users className="w-6 h-6 mr-3" />
+                VS PLAYER
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="font-arcade text-[#33ff33] border-[#33ff33] hover:bg-[#33ff33]/10 h-16"
+                onClick={() => {
+                  handleGameModeChange("ai");
+                  soundManager?.playSound("click");
+                }}
+              >
+                <Bot className="w-6 h-6 mr-3" />
+                VS AI
+              </Button>
+            </div>
           </motion.div>
         ) : (
-          <motion.div
-            key="game"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="h-full"
-          >
-            <Game
-              mode={gameMode === "ai" ? "ai" : "pvp"}
-              onBack={() => {
-                handleGameModeChange("menu");
-                soundManager?.playSound("click");
-              }}
-            />
-          </motion.div>
+          <Game mode={gameMode} onBack={() => handleGameModeChange("menu")} />
         )}
-      </AnimatePresence>
-
-      {/* Game Invite Modal */}
-      <AnimatePresence>
-        {gameInvite && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          >
-            <GameInvite
-              inviter={gameInvite.inviter}
-              onAccept={() => handleInviteResponse(true)}
-              onDecline={() => handleInviteResponse(false)}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

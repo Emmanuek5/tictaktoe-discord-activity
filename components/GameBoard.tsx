@@ -1,6 +1,7 @@
 import { GameState } from "../server/types";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Button } from "./ui/button";
 
 interface GameBoardProps {
   gameState: GameState;
@@ -41,12 +42,12 @@ export function GameBoard({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 md:gap-6 p-4 md:p-0">
+    <div className="flex flex-col items-center gap-4 max-h-full p-4">
       <div className="text-lg md:text-xl font-bold text-white text-center font-arcade">
         {getStatusMessage()}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-[min(90vw,400px)] relative">
+      <div className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-[min(80vh,400px)] relative">
         {/* Winning line overlay */}
         {gameState.winningLine && (
           <motion.div
@@ -126,35 +127,20 @@ export function GameBoard({
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm justify-center">
-        <div
-          className={cn(
-            "px-3 md:px-4 py-2 rounded-full",
-            playerSymbol === "X" ? "bg-game-purple/20" : "bg-game-blue-light/20"
-          )}
-        >
-          You: {playerSymbol}
-        </div>
-        <div
-          className={cn(
-            "px-3 md:px-4 py-2 rounded-full",
-            gameState.currentPlayer === "X"
-              ? "bg-game-purple/20"
-              : "bg-game-blue-light/20"
-          )}
-        >
-          Current Turn: {gameState.currentPlayer}
-        </div>
-      </div>
-
       {isGameOver && (
-        <button
-          onClick={onReset}
-          className="mt-2 md:mt-4 px-4 md:px-6 py-2 bg-game-purple hover:bg-game-purple/80 text-white rounded-lg 
-            transition-colors font-semibold text-sm md:text-base"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4"
         >
-          Play Again
-        </button>
+          <Button
+            onClick={onReset}
+            className="font-arcade text-[#33ff33] border-[#33ff33] hover:bg-[#33ff33]/10"
+            variant="outline"
+          >
+            PLAY AGAIN
+          </Button>
+        </motion.div>
       )}
     </div>
   );
