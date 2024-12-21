@@ -1,6 +1,6 @@
 export interface GameState {
   board: Array<string | null>;
-  currentPlayer: string;
+  currentPlayer: string | null;
   players: {
     X: string | null;
     O: string | null;

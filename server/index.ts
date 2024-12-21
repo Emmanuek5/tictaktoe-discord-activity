@@ -94,12 +94,9 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = 4000;
 
 // Track active sessions and their participants
-const activeSessions = new Map<string, ChannelSession>();
-
-// Track socket to user ID mappings
-const socketToUser = new Map<string, {
-  userId: string;
-  channelId: string;
+const channelSessions = new Map<string, {
+  participants: Map<string, Participant>;
+  games: Map<string, GameSession>;
 }>();
 
 // Initialize databases
@@ -112,87 +109,43 @@ init().catch(console.error);
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  let userChannelId: string | null = null;
 
   // Helper function to emit session state
-  const emitSessionState = async (channelId: string, isAIGame: boolean = false) => {
+  const emitSessionState = async (channelId: string) => {
     try {
       console.log('Emitting session state for channel:', channelId);
       
-      const session = activeSessions.get(channelId);
+      const session = channelSessions.get(channelId);
       if (!session) {
         console.log('No session found for channel:', channelId);
         return;
       }
 
-      // Get participants from Redis
-      const participants = await getChannelParticipants(channelId);
-      console.log('Got participants from Redis:', participants);
+      // Convert participants Map to array
+      const participants = Array.from(session.participants.values());
       
       // Get all sockets in the channel
       const roomSockets = await io.in(channelId).fetchSockets();
-      const socketIds = new Set(roomSockets.map(s => s.id));
-      
-      console.log('Active sockets in room:', Array.from(socketIds));
-      
-      // Filter out disconnected participants with more lenient check
-      const connectedParticipants = participants.filter(p => {
-        // Always include participants that are in the room
-        if (p.socketId && socketIds.has(p.socketId)) {
-          console.log('Participant in room:', p.username);
-          return true;
-        }
-        
-        // If no socketId, check if they have a new socket in the room
-        const userSocket = roomSockets.find(s => s.data.userId === p.id);
-        if (userSocket) {
-          console.log('Participant found with different socket:', p.username);
-          p.socketId = userSocket.id;
-          return true;
-        }
-
-        console.log('Participant not in room:', p.username);
-        return false;
-      });
-
-      // Update Redis with connected participants
-      await saveChannelParticipants(channelId, connectedParticipants);
-
-      // Update memory cache
-      session.participants = connectedParticipants;
-
-      // For AI games, only include the current user
-      const filteredParticipants = isAIGame 
-        ? connectedParticipants.filter(p => p.id === socket.data.userId)
-        : connectedParticipants;
-
-      const availableForGame = isAIGame 
-        ? []
-        : connectedParticipants.filter(p => 
-            p.id !== socket.data.userId &&
-            !Array.from(session.games.values()).some(game => 
-              game.gameState.players.X === p.id || 
-              game.gameState.players.O === p.id
-            )
-          );
-
-      // Add debug logging
-      console.log('Final session state:', {
-        channelId,
-        participantsCount: filteredParticipants.length,
-        availableCount: availableForGame.length,
-        participants: filteredParticipants.map(p => ({
-          id: p.id,
-          username: p.username,
-          socketId: p.socketId,
-          inRoom: socketIds.has(p.socketId || '')
-        }))
-      });
+      console.log('Active sockets in room:', roomSockets.map(s => s.id));
 
       // Emit to all clients in the channel
       io.to(channelId).emit('sessionState', {
-        participants: filteredParticipants,
-        availableForGame
+        participants,
+        availableForGame: participants.filter(p => 
+          !Array.from(session.games.values()).some(game => 
+            game.gameState.players.X === p.id || 
+            game.gameState.players.O === p.id
+          )
+        )
+      });
+
+      console.log('Session state emitted:', {
+        channelId,
+        participantCount: participants.length,
+        participants: participants.map(p => ({
+          id: p.id,
+          username: p.username
+        }))
       });
     } catch (error) {
       console.error('Error in emitSessionState:', error);
@@ -200,337 +153,208 @@ io.on('connection', (socket) => {
   };
 
   socket.on("initializeSession", async ({ channelId, userId, username, avatar, global_name, isAIGame }) => {
-    console.log('Initializing session:', { channelId, userId, username, avatar, global_name, isAIGame });
-    
-    // Store user info in socket data for easy access
-    socket.data.userId = userId;
-    socket.data.channelId = channelId;
-    
-    userChannelId = channelId;
-    socketToUser.set(socket.id, { userId, channelId });
-
-    // Join the socket to the channel room first
-    socket.join(channelId);
-
-    // Get or create session from Redis
-    let session = activeSessions.get(channelId);
-    if (!session) {
-      const savedSession = await getChannelSession(channelId) as ChannelSession | null;
-      if (savedSession) {
-        session = savedSession;
-      } else {
-        session = {
-          participants: [],
-          games: new Map(),
-        };
-      }
-      activeSessions.set(channelId, session);
-    }
-
-    // Update participant with retry logic
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    const updateParticipant = async () => {
-      try {
-        const participant: Participant = {
-          id: userId,
-          username,
-          avatar: avatar || null,
-          global_name: global_name || null,
-          socketId: socket.id
-        };
-
-        // Update Redis and get updated participants list
-        const updatedParticipants = await addChannelParticipant(channelId, participant);
-        
-        if (!session) {
-          session = {
-            participants: [],
-            games: new Map()
-          };
-          activeSessions.set(channelId, session);
-        }
-        
-        session.participants = updatedParticipants;
-
-        // Save session state to Redis
-        await saveChannelSession(channelId, session);
-        
-        // Emit updated session state
-        await emitSessionState(channelId, isAIGame);
-        return true;
-      } catch (error) {
-        console.error('Error updating participant:', error);
-        if (retryCount < maxRetries) {
-          retryCount++;
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return false;
-        }
-        return true;
-      }
-    };
-
-    while (!(await updateParticipant()) && retryCount < maxRetries) {
-      console.log(`Retrying participant update (${retryCount + 1}/${maxRetries})`);
-    }
-
-    // For AI games, create a new game state
-    if (isAIGame) {
-      const gameId = `${channelId}-${userId}-AI-${Date.now()}`;
-      console.log('Creating new AI game:', gameId);
-      
-      const gameState = {
-        ...createNewGame(channelId),
-        isAIGame: true,
-        players: {
-          X: userId,
-          O: 'AI'
-        },
-        currentPlayer: 'X' // Ensure player goes first
-      };
-
-      const gameSession: GameSession = {
-        gameId,
-        gameState,
-        playerSockets: {
-          X: socket.id,
-          O: null
-        }
-      };
-
-      session.games.set(gameId, gameSession);
-      await saveGameState(gameState);
-      
-      // Send the initial game state
-      socket.emit('gameState', { 
-        gameId, 
-        state: gameState 
-      });
-      
-      console.log('Sent initial AI game state:', { gameId, state: gameState });
-    }
-
-    // Get and send user stats
     try {
-      const stats = await getUserStats(userId);
-      if (stats) {
-        socket.emit('userStats', stats);
+      console.log('Initializing session:', { channelId, userId, username, isAIGame });
+
+      // Join the channel room
+      await socket.join(channelId);
+      
+      // Get or create channel session
+      let session = channelSessions.get(channelId);
+      if (!session) {
+        session = {
+          participants: new Map(),
+          games: new Map()
+        };
+        channelSessions.set(channelId, session);
+      }
+
+      // Add participant to session
+      const participant: Participant = {
+        id: userId,
+        username,
+        avatar: avatar || null,
+        global_name: global_name || null,
+        socketId: socket.id
+      };
+
+      session.participants.set(userId, participant);
+      console.log('Added participant to session:', participant);
+
+      // Store channel ID in socket for cleanup
+      socket.data.channelId = channelId;
+      socket.data.userId = userId;
+
+      // If it's an AI game, automatically create a game
+      if (isAIGame) {
+        const gameId = `game_${Date.now()}`;
+        const game: GameSession = {
+          gameId,
+          gameState: {
+            board: Array(9).fill(null),
+            currentPlayer: 'X',
+            players: {
+              X: userId,
+              O: 'AI'
+            },
+            isAIGame: true,
+            winner: null,
+            isDraw: false,
+            winningLine: null,
+            roomId: channelId,
+            participants: [{
+              user: {
+                id: userId,
+                username
+              }
+            }]
+          },
+          playerSockets: {
+            X: socket.id,
+            O: null
+          }
+        };
+        session.games.set(gameId, game);
+        console.log('Created AI game:', gameId);
+      }
+
+      // Emit updated session state
+      await emitSessionState(channelId);
+
+    } catch (error) {
+      console.error('Error in initializeSession:', error);
+      socket.emit('error', { message: 'Failed to initialize session' });
+    }
+  });
+
+  socket.on('disconnect', async () => {
+    try {
+      const channelId = socket.data.channelId;
+      const userId = socket.data.userId;
+
+      if (!channelId || !userId) {
+        console.log('No channel/user info for disconnected socket:', socket.id);
+        return;
+      }
+
+      console.log('Client disconnected:', { socketId: socket.id, channelId, userId });
+
+      const session = channelSessions.get(channelId);
+      if (session) {
+        // Check if user has other active sockets in the channel
+        const roomSockets = await io.in(channelId).fetchSockets();
+        const userHasOtherSockets = roomSockets.some(s => 
+          s.id !== socket.id && s.data.userId === userId
+        );
+
+        if (!userHasOtherSockets) {
+          // Remove participant from session
+          session.participants.delete(userId);
+          console.log('Removed participant from session:', userId);
+
+          // Clean up empty session
+          if (session.participants.size === 0) {
+            channelSessions.delete(channelId);
+            console.log('Removed empty session:', channelId);
+          }
+
+          // Emit updated state to remaining participants
+          await emitSessionState(channelId);
+        }
       }
     } catch (error) {
-      console.error('Error fetching user stats:', error);
-    }
-
-    // Get user's active games
-    const userGames = Array.from(session.games.values())
-      .filter(game => 
-        (game.gameState.players.X === userId && game.playerSockets.X) || 
-        (game.gameState.players.O === userId && game.playerSockets.O)
-      );
-
-    // Send each active game to the user
-    for (const game of userGames) {
-      socket.emit('gameState', { 
-        gameId: game.gameId, 
-        state: game.gameState 
-      });
-    }
-
-    // Emit the current session state
-    await emitSessionState(channelId, isAIGame);
-  });
-
-  socket.on('updateParticipants', ({ channelId, participants, isAIGame }) => {
-    const session = activeSessions.get(channelId);
-    if (!session) return;
-
-    const userInfo = socketToUser.get(socket.id);
-    if (!userInfo) return;
-
-    // Update session participants while preserving socket IDs and existing data
-    session.participants = participants.map((newParticipant: any) => {
-      const existing = session.participants.find(p => p.id === newParticipant.id);
-      return {
-        ...existing, // Preserve existing data
-        ...newParticipant, // Update with new data
-        socketId: existing?.socketId || null, // Preserve socket ID
-      };
-    });
-
-    // Emit updated session state
-    emitSessionState(channelId, isAIGame);
-  });
-
-  socket.on('resetGame', async ({ channelId, userId, isAIGame, gameId }) => {
-    const session = activeSessions.get(channelId);
-    if (!session) return;
-
-    const gameSession = session.games.get(gameId);
-    if (!gameSession) return;
-
-    // Create new game state
-    const gameState = {
-      ...createNewGame(channelId),
-      isAIGame,
-      players: isAIGame 
-        ? {
-            X: userId,
-            O: 'AI'
-          }
-        : gameSession.gameState.players
-    };
-
-    gameSession.gameState = gameState;
-    await saveGameState(gameState);
-    socket.emit('gameState', { gameId, state: gameState });
-
-    // If AI goes first, make the move
-    if (isAIGame && gameState.currentPlayer === 'O') {
-      const aiMove = getBestMove(gameState);
-      handleMove({
-        position: aiMove,
-        player: 'O',
-        roomId: channelId,
-        gameId
-      });
+      console.error('Error handling disconnect:', error);
     }
   });
 
-  const handleMove = async (move: GameMove & { gameId: string }) => {
-    const session = activeSessions.get(move.roomId);
-    if (!session) return;
+  socket.on('move', async (move: GameMove & { gameId: string }) => {
+    try {
+      const channelId = socket.data.channelId;
+      const userId = socket.data.userId;
 
-    const gameSession = session.games.get(move.gameId);
-    if (!gameSession) return;
+      if (!channelId || !userId) {
+        console.log('No channel/user info for move:', socket.id);
+        return;
+      }
 
-    const newGameState = makeMove(gameSession.gameState, move);
-    
-    if (newGameState !== gameSession.gameState) {
-      gameSession.gameState = newGameState;
-      await saveGameState(newGameState);
-      io.to(move.roomId).emit('gameState', { gameId: move.gameId, state: newGameState });
+      const session = channelSessions.get(channelId);
+      if (!session) return;
 
-      // Handle game over
-      if (newGameState.winner || newGameState.isDraw) {
-        const { players, isAIGame } = newGameState;
+      const game = session.games.get(move.gameId);
+      if (!game) return;
+
+      // Make player move
+      if (game.gameState.board[move.position] === null && 
+          game.gameState.currentPlayer === 'X' && 
+          game.gameState.players.X === userId) {
         
-        try {
-          // Log game completion
-          await logGameCompletion({
-            roomId: move.roomId,
-            playerX: players.X || 'unknown',
-            playerO: players.O || 'unknown',
-            winner: newGameState.winner || undefined,
-            isDraw: newGameState.isDraw,
-            isAIGame,
-            moves: newGameState.board.map((value, index) => ({
-              position: index,
-              player: value
-            })).filter(move => move.player !== null)
-          });
-
-          // Emit updated stats to players
-          const playerIds = [players.X, players.O].filter(id => id && id !== 'AI');
-          for (const playerId of playerIds) {
-            const stats = await getUserStats(playerId!);
-            if (stats) {
-              io.to(move.roomId).emit('userStats', stats);
-            }
-          }
-        } catch (error) {
-          console.error('Error handling game completion:', error);
-        }
-
-        // Clean up game state after delay
-        setTimeout(async () => {
-          if (session.games.get(move.gameId)?.gameState === newGameState) {
-            session.games.delete(move.gameId);
-            await deleteGameState(move.roomId);
-            io.to(move.roomId).emit('gameState', { gameId: move.gameId, state: null });
-          }
-        }, 5000);
-      }
-      
-      // If it's AI's turn, make the AI move
-      if (!newGameState.winner && !newGameState.isDraw && 
-          newGameState.isAIGame && 
-          newGameState.currentPlayer === 'O' && 
-          newGameState.players.O === 'AI') {
-        setTimeout(async () => {
-          const aiMove = getBestMove(newGameState);
-          await handleMove({
-            position: aiMove,
-            player: 'O',
-            roomId: move.roomId,
-            gameId: move.gameId
-          });
-        }, 1000);
-      }
-    }
-  };
-
-  socket.on('move', (move: GameMove & { gameId: string }) => {
-    const userInfo = socketToUser.get(socket.id);
-    if (!userInfo) return;
-
-    const session = activeSessions.get(move.roomId);
-    if (!session) return;
-
-    const gameSession = session.games.get(move.gameId);
-    if (!gameSession) return;
-
-    // Validate that it's the player's turn
-    const { currentPlayer } = gameSession.gameState;
-    const playerRole = gameSession.gameState.players.X === userInfo.userId ? 'X' : 'O';
-    
-    if (currentPlayer !== playerRole) {
-      console.log('Not player\'s turn');
-      return;
-    }
-
-    handleMove(move);
-  });
-
-  // Handle disconnections
-  socket.on('disconnect', async () => {
-    console.log('Client disconnected:', socket.id);
-    
-    const userInfo = socketToUser.get(socket.id);
-    if (userInfo && userInfo.channelId) {
-      const session = activeSessions.get(userInfo.channelId);
-      if (session) {
-        try {
-          // Update participant's socket ID in Redis
-          await updateParticipantSocket(userInfo.channelId, userInfo.userId, null);
+        game.gameState.board[move.position] = 'X';
+        
+        // Check for win/draw after player move
+        const winner = checkWinner(game.gameState.board);
+        const isDraw = !winner && game.gameState.board.every(cell => cell !== null);
+        
+        if (winner || isDraw) {
+          game.gameState.winner = winner;
+          game.gameState.isDraw = isDraw;
+          game.gameState.currentPlayer = null;
+        } else if (game.gameState.isAIGame) {
+          // AI's turn
+          game.gameState.currentPlayer = 'O';
           
-          // Clean up empty games
-          for (const [gameId, game] of session.games) {
-            if (game.playerSockets.X === socket.id) {
-              game.playerSockets.X = null;
-            }
-            if (game.playerSockets.O === socket.id) {
-              game.playerSockets.O = null;
-            }
-
-            // Remove game if both players are disconnected
-            if (!game.playerSockets.X && !game.playerSockets.O) {
-              session.games.delete(gameId);
-            }
+          // Simple AI: find first empty spot
+          const aiMove = game.gameState.board.findIndex(cell => cell === null);
+          if (aiMove !== -1) {
+            setTimeout(() => {
+              game.gameState.board[aiMove] = 'O';
+              
+              // Check for win/draw after AI move
+              const winner = checkWinner(game.gameState.board);
+              const isDraw = !winner && game.gameState.board.every(cell => cell !== null);
+              
+              if (winner || isDraw) {
+                game.gameState.winner = winner;
+                game.gameState.isDraw = isDraw;
+                game.gameState.currentPlayer = null;
+              } else {
+                game.gameState.currentPlayer = 'X';
+              }
+              
+              io.to(channelId).emit('gameState', {
+                gameId: move.gameId,
+                state: game.gameState
+              });
+            }, 500); // Add a small delay for AI move
           }
-
-          // Remove empty sessions
-          if (session.participants.length === 0 && session.games.size === 0) {
-            activeSessions.delete(userInfo.channelId);
-          }
-        } catch (error) {
-          console.error('Error handling disconnect:', error);
+        } else {
+          game.gameState.currentPlayer = 'O';
         }
+        
+        io.to(channelId).emit('gameState', {
+          gameId: move.gameId,
+          state: game.gameState
+        });
+      }
+    } catch (error) {
+      console.error('Error handling move:', error);
+    }
+  });
+
+  // Helper function to check for a winner
+  const checkWinner = (board: Array<string | null>): string | null => {
+    const lines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+      [0, 4, 8], [2, 4, 6]             // Diagonals
+    ];
+    
+    for (const [a, b, c] of lines) {
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+        return board[a];
       }
     }
-
-    // Clean up socket mapping
-    socketToUser.delete(socket.id);
-  });
+    return null;
+  };
 
   // Handle stats request
   socket.on('requestStats', async ({ userId }) => {
@@ -546,14 +370,14 @@ io.on('connection', (socket) => {
 
   // Handle game invites
   socket.on('sendGameInvite', ({ inviteeId, channelId }) => {
-    const session = activeSessions.get(channelId);
+    const session = channelSessions.get(channelId);
     if (!session) return;
 
-    const inviter = session.participants.find(p => p.id === socketToUser.get(socket.id)?.userId);
+    const inviter = session.participants.get(socket.data.userId);
     if (!inviter) return;
 
     // Find the invitee's socket ID
-    const invitee = session.participants.find(p => p.id === inviteeId);
+    const invitee = session.participants.get(inviteeId);
     if (!invitee?.socketId) return;
 
     const inviteId = `${channelId}-${Date.now()}`;
@@ -567,7 +391,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('respondToInvite', ({ inviteId, accepted, inviterId, inviteeId, channelId }) => {
-    const session = activeSessions.get(channelId);
+    const session = channelSessions.get(channelId);
     if (!session) return;
 
     if (accepted) {
@@ -607,18 +431,14 @@ io.on('connection', (socket) => {
 
 // Clean up inactive sessions periodically
 setInterval(() => {
-  for (const [channelId, session] of activeSessions.entries()) {
+  for (const [channelId, session] of channelSessions.entries()) {
     // Remove disconnected participants
-    session.participants = session.participants.filter(p => p.socketId);
+    session.participants = new Map(Array.from(session.participants.entries()).filter(([id, participant]) => participant.socketId));
     
     // Clean up finished or abandoned games
     for (const [gameId, game] of session.games) {
-      const xConnected = session.participants.some(p => 
-        p.id === game.gameState.players.X && p.socketId
-      );
-      const oConnected = session.participants.some(p => 
-        p.id === game.gameState.players.O && p.socketId
-      );
+      const xConnected = game.gameState.players.X ? session.participants.has(game.gameState.players.X) : false;
+      const oConnected = game.gameState.players.O ? session.participants.has(game.gameState.players.O) : false;
 
       if (!xConnected && !oConnected && !game.gameState.isAIGame) {
         session.games.delete(gameId);
@@ -626,8 +446,8 @@ setInterval(() => {
     }
 
     // Remove empty sessions
-    if (session.participants.length === 0 && session.games.size === 0) {
-      activeSessions.delete(channelId);
+    if (session.participants.size === 0 && session.games.size === 0) {
+      channelSessions.delete(channelId);
     }
   }
 }, 300000); // Clean up every 5 minutes
