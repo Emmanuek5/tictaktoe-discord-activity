@@ -12,6 +12,7 @@ import { useDiscordContext } from "@/contexts/DiscordContext";
 import { MoveLeft, Bot, Loader2, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { soundManager } from "@/utils/sounds";
 
 const AI_PARTICIPANT: DiscordParticipant = {
   id: "AI",
@@ -154,12 +155,7 @@ function GameComponent({ mode, onBack }: GameProps) {
       }
     );
 
-    newSocket.on("gameState", ({ gameId: newGameId, state }) => {
-      console.log("Received game state:", { newGameId, state });
-      setGameId(newGameId);
-      setGameState(state);
-      setWaitingForResponse(false);
-    });
+    newSocket.on("gameState", handleGameState);
 
     newSocket.on("gameInvite", ({ inviter, inviteId }) => {
       console.log("Received game invite:", { inviter, inviteId });
@@ -199,12 +195,87 @@ function GameComponent({ mode, onBack }: GameProps) {
     };
   }, [currentUser?.id, sdk?.channelId, isAIGame]);
 
+  const handleGameState = ({
+    gameId: newGameId,
+    state,
+  }: {
+    gameId: string;
+    state: GameState;
+  }) => {
+    console.log("Received game state:", { newGameId, state });
+
+    // Handle game cleanup
+    if (!state) {
+      setGameState(null);
+      setGameId(null);
+      return;
+    }
+
+    setGameId(newGameId);
+    setGameState(state);
+    setWaitingForResponse(false);
+
+    // Play appropriate sound for game end
+    if (state.winner) {
+      const isWinner =
+        state.players[state.winner as keyof typeof state.players] ===
+        currentUser?.id;
+      soundManager?.playSound(isWinner ? "win" : "lose");
+    } else if (state.isDraw) {
+      soundManager?.playSound("draw");
+    }
+
+    // Handle AI's turn with timing that matches server
+    if (
+      state.isAIGame &&
+      state.currentPlayer === "O" &&
+      !state.winner &&
+      !state.isDraw
+    ) {
+      setWaitingForResponse(true);
+      // Server has 1s delay for AI moves
+      setTimeout(() => {
+        if (!gameState?.winner && !gameState?.isDraw) {
+          soundManager?.playSound("move");
+        }
+      }, 800); // Slightly before AI move to sync with animation
+    }
+  };
+
+  // Handle user stats updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUserStats = (stats: any) => {
+      // Update any UI that shows user stats
+      console.log("Received updated user stats:", stats);
+    };
+
+    socket.on("userStats", handleUserStats);
+
+    return () => {
+      socket.off("userStats", handleUserStats);
+    };
+  }, [socket]);
+
+  // Handle game cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (socket && gameId) {
+        socket.emit("leaveGame", { gameId });
+      }
+    };
+  }, [socket, gameId]);
+
   const handleMove = useCallback(
     (position: number) => {
       if (!socket || !gameState || !currentUser || !gameId) return;
 
       const playerRole = gameState.players.X === currentUser.id ? "X" : "O";
       if (gameState.currentPlayer !== playerRole) return;
+
+      // Play move sound
+      soundManager?.playSound("move");
 
       socket.emit("move", {
         position,
@@ -257,16 +328,35 @@ function GameComponent({ mode, onBack }: GameProps) {
     [socket, gameInvite, currentUser?.id, sdk?.channelId]
   );
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && socket) {
+        console.log("Tab hidden, cleaning up socket");
+        socket.disconnect();
+      } else if (!document.hidden && !socket?.connected) {
+        console.log("Tab visible, reconnecting socket");
+        socket?.connect();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [socket]);
+
   if (!participants || !currentUser) {
     return (
-      <div className="relative min-h-screen bg-[#000000] text-white flex items-center justify-center">
+      <div className="relative min-h-screen bg-[#000000] text-white flex items-center justify-center overflow-hidden">
         {/* Scanline effect */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
-        
+
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 text-[#33ff33] animate-spin" />
           <div className="font-arcade text-[#33ff33] animate-pulse">
-            LOADING GAME...
+            {gameState?.isAIGame && gameState.currentPlayer === "O"
+              ? "AI IS THINKING..."
+              : "LOADING GAME..."}
           </div>
         </div>
       </div>
@@ -274,7 +364,7 @@ function GameComponent({ mode, onBack }: GameProps) {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#000000] text-white p-4">
+    <div className="h-screen bg-[#000000] text-white p-4">
       {/* Scanline effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
 
