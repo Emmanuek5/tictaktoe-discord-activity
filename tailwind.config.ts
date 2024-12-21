@@ -80,10 +80,30 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        glow: {
+          'from': {
+            textShadow: '0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073, 0 0 40px #e60073',
+          },
+          'to': {
+            textShadow: '0 0 20px #fff, 0 0 30px #ff4da6, 0 0 40px #ff4da6, 0 0 50px #ff4da6',
+          },
+        },
+        'arcade-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        'glow': 'glow 1s ease-in-out infinite alternate',
+        'arcade-pulse': 'arcade-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      fontFamily: {
+        arcade: ["Press Start 2P", "cursive"],
+      },
+      backgroundImage: {
+        'arcade-gradient': 'linear-gradient(to bottom right, #4f46e5, #7c3aed, #db2777)',
       },
     },
   },

@@ -11,6 +11,9 @@ import { Bot, Users } from "lucide-react";
 import Game from "@/components/Game";
 import Image from "next/image";
 import Loader from "@/components/Loader";
+import { soundManager } from "@/utils/sounds";
+import { SoundToggle } from "@/components/ui/sound-toggle";
+import { ArcadeText } from "@/components/ui/arcade-text";
 
 export default function Home() {
   const {
@@ -138,6 +141,28 @@ export default function Home() {
     };
   }, [socket]);
 
+  useEffect(() => {
+    if (soundManager) {
+      soundManager.startBackgroundMusic();
+    }
+    return () => {
+      if (soundManager) {
+        soundManager.stopBackgroundMusic();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("gameStart", () => soundManager?.playSound("click"));
+      socket.on("moveMade", () => soundManager?.playSound("move"));
+      socket.on("gameWon", () => soundManager?.playSound("win"));
+      socket.on("gameLost", () => soundManager?.playSound("lose"));
+      socket.on("gameDraw", () => soundManager?.playSound("draw"));
+      socket.on("gameInvite", () => soundManager?.playSound("invite"));
+    }
+  }, [socket]);
+
   const handleInviteResponse = async (accepted: boolean) => {
     if (!socket || !gameInvite) return;
 
@@ -157,13 +182,17 @@ export default function Home() {
   };
 
   if (isLoading || !currentUser) {
-    return <Loader />;
+    return (
+      <div className="flex items-center justify-center">
+        <Loader />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0f1117]">
-        <div className="text-red-500 text-2xl">Error: {error.message}</div>
+      <div className="flex items-center justify-center">
+        <ArcadeText className="text-red-500">Error: {error.message}</ArcadeText>
       </div>
     );
   }
@@ -174,192 +203,49 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-white overflow-auto">
-      <AnimatePresence mode="wait">
-        {gameMode === "menu" ? (
-          <motion.div
-            key="menu"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="min-h-screen flex flex-col md:flex-row"
-          >
-            {/* Left sidebar with user stats */}
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="w-full md:w-80 p-4 md:p-6 border-b md:border-b-0 md:border-r border-white/10"
+    <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-arcade-gradient">
+      <SoundToggle />
+
+      {gameMode === "menu" ? (
+        <div className="space-y-6 text-center">
+          <ArcadeText size="lg" glowColor="#4f46e5">
+            TIC TAC TOE
+          </ArcadeText>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button
+              onClick={() => {
+                setGameMode("ai");
+                soundManager?.playSound("click");
+              }}
+              className="w-full p-6 text-xl font-arcade bg-purple-900/20 hover:bg-purple-900/40 backdrop-blur-sm border-2 border-purple-500/50 hover:border-purple-500 transition-all duration-300"
             >
-              <div className="space-y-4 md:space-y-6">
-                {/* User Profile */}
-                <div className="flex md:flex-col items-center space-x-4 md:space-x-0 md:space-y-4">
-                  <Image
-                    src={
-                      currentUser?.avatar
-                        ? `https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png`
-                        : "https://cdn.discordapp.com/embed/avatars/0.png"
-                    }
-                    width={60}
-                    height={60}
-                    alt="User Avatar"
-                    className="rounded-full border-2 border-white/20 md:w-20 md:h-20"
-                  />
-                  <div className="text-left md:text-center">
-                    <h2 className="font-semibold text-base md:text-lg">
-                      {currentUser.global_name || currentUser.username}
-                    </h2>
-                    <p className="text-xs md:text-sm text-white/60">
-                      {currentGuild?.name} • {currentChannel?.name}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                {userStats && (
-                  <div className="space-y-4 md:space-y-6">
-                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
-                      <h3 className="text-sm font-medium mb-3 text-white/70">
-                        Overall Stats
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 md:gap-6">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">
-                            {userStats.totalGames}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Games Played
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-2xl font-bold">
-                            {(
-                              (userStats.wins / userStats.totalGames) * 100 || 0
-                            ).toFixed(1)}
-                            %
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Win Rate
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
-                      <h3 className="text-sm font-medium mb-3 text-white/70">
-                        Game Results
-                      </h3>
-                      <div className="grid grid-cols-3 gap-2 md:gap-4">
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-green-400">
-                            {userStats.wins}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Wins
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-red-400">
-                            {userStats.losses}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Losses
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xl font-bold text-yellow-400">
-                            {userStats.draws}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Draws
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-lg p-4 md:p-6">
-                      <h3 className="text-sm font-medium mb-3 text-white/70">
-                        AI Games
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 md:gap-6">
-                        <div className="text-center">
-                          <p className="text-xl font-bold">
-                            {userStats.aiGamesPlayed}
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            Games vs AI
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-xl font-bold">
-                            {(
-                              (userStats.aiWins / userStats.aiGamesPlayed) *
-                                100 || 0
-                            ).toFixed(1)}
-                            %
-                          </p>
-                          <p className="text-xs md:text-sm text-white/60">
-                            AI Win Rate
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Main content */}
-            <div className="flex-1 flex items-center justify-center">
-              <div className="max-w-md w-full space-y-12 p-8 md:p-12">
-                <div className="text-center space-y-4">
-                  <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-violet-500">
-                    Tic Tac{" "}
-                    <span className="text-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">
-                      Showdown
-                    </span>
-                  </h1>
-                  <p className="text-lg md:text-xl text-white/60">
-                    Challenge friends or test your skills against AI
-                  </p>
-                </div>
-
-                <div className="space-y-4 md:space-y-6">
-                  <Button
-                    size="lg"
-                    className="w-full h-16 md:h-20 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700"
-                    onClick={() => handleGameModeChange("pvp")}
-                  >
-                    <Users className="w-6 h-6 mr-3" />
-                    Play with Friends
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="w-full h-16 md:h-20 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700"
-                    onClick={() => handleGameModeChange("ai")}
-                  >
-                    <Bot className="w-6 h-6 mr-3" />
-                    Play against AI
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="game"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="h-full"
-          >
-            <Game
-              mode={gameMode === "ai" ? "ai" : "pvp"}
-              onBack={() => handleGameModeChange("menu")}
-              inviteData={gameInvite}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Play vs AI
+            </Button>
+            <Button
+              onClick={() => {
+                setGameMode("pvp");
+                soundManager?.playSound("click");
+              }}
+              className="w-full p-6 text-xl font-arcade bg-purple-900/20 hover:bg-purple-900/40 backdrop-blur-sm border-2 border-purple-500/50 hover:border-purple-500 transition-all duration-300"
+            >
+              Play vs Player
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <motion.div
+          key="game"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="h-full"
+        >
+          <Game
+            mode={gameMode === "ai" ? "ai" : "pvp"}
+            onBack={() => handleGameModeChange("menu")}
+          />
+        </motion.div>
+      )}
 
       {/* Game Invite Modal */}
       <AnimatePresence>
@@ -385,6 +271,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </main>
   );
 }

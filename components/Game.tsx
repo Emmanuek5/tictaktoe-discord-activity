@@ -80,6 +80,7 @@ function GameComponent({ mode, onBack }: GameProps) {
     };
 
     waitForParticipantsUpdate();
+    getParticipants();
 
     return () => {
       sdk.unsubscribe(
@@ -153,15 +154,12 @@ function GameComponent({ mode, onBack }: GameProps) {
       }
     );
 
-    newSocket.on(
-      "gameState",
-      ({ gameId: newGameId, state }) => {
-        console.log("Received game state:", { newGameId, state });
-        setGameId(newGameId);
-        setGameState(state);
-        setWaitingForResponse(false);
-      }
-    );
+    newSocket.on("gameState", ({ gameId: newGameId, state }) => {
+      console.log("Received game state:", { newGameId, state });
+      setGameId(newGameId);
+      setGameState(state);
+      setWaitingForResponse(false);
+    });
 
     newSocket.on("gameInvite", ({ inviter, inviteId }) => {
       console.log("Received game invite:", { inviter, inviteId });
