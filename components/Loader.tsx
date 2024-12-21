@@ -26,11 +26,11 @@ export default function Loader() {
       initial="hidden"
       animate="visible"
       variants={loadingVariants}
-      className="flex items-center justify-center w-screen h-screen bg-[#000000] relative"
+      className="flex items-center justify-center w-screen h-screen bg-[#000000] relative overflow-hidden"
     >
       {/* Scanline effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
-      
+
       <div className="flex flex-col items-center gap-8">
         <div className="relative">
           {/* Rotating border */}
@@ -53,7 +53,7 @@ export default function Loader() {
         <div className="font-arcade text-xl text-[#33ff33] text-center max-w-md px-4 animate-pulse">
           LOADING...
         </div>
-        
+
         <div className="font-arcade text-sm text-[#ffff00] text-center max-w-md px-4">
           {facts[Math.floor(Math.random() * facts.length)]}
         </div>

@@ -309,7 +309,7 @@ export default function Home() {
 
                     <div className="bg-[#111111] rounded-none border-2 border-[#33ff33] p-4 md:p-6">
                       <h3 className="font-arcade text-sm mb-3 text-[#33ff33]">
-                        CPU BATTLES
+                        AI BATTLES
                       </h3>
                       <div className="grid grid-cols-2 gap-4 md:gap-6">
                         <div className="text-center">
@@ -317,7 +317,7 @@ export default function Home() {
                             {userStats.aiGamesPlayed}
                           </p>
                           <p className="font-arcade text-xs text-[#33ff33]">
-                            VS CPU
+                            VS AI
                           </p>
                         </div>
                         <div className="text-center">
@@ -329,7 +329,7 @@ export default function Home() {
                             %
                           </p>
                           <p className="font-arcade text-xs text-[#33ff33]">
-                            CPU WINS
+                            AI WINS
                           </p>
                         </div>
                       </div>
@@ -377,7 +377,7 @@ export default function Home() {
                     }}
                   >
                     <Bot className="w-6 h-6 mr-3" />
-                    VS CPU
+                    VS AI
                   </Button>
                 </div>
 

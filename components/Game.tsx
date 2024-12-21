@@ -257,6 +257,22 @@ function GameComponent({ mode, onBack }: GameProps) {
     [socket, gameInvite, currentUser?.id, sdk?.channelId]
   );
 
+  if (!participants || !currentUser) {
+    return (
+      <div className="relative min-h-screen bg-[#000000] text-white flex items-center justify-center">
+        {/* Scanline effect */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
+        
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-[#33ff33] animate-spin" />
+          <div className="font-arcade text-[#33ff33] animate-pulse">
+            LOADING GAME...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-[#000000] text-white p-4">
       {/* Scanline effect */}
