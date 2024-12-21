@@ -216,14 +216,6 @@ function GameComponent({ mode, onBack }: GameProps) {
     setWaitingForResponse(false);
 
     // Play appropriate sound for game end
-    if (state.winner) {
-      const isWinner =
-        state.players[state.winner as keyof typeof state.players] ===
-        currentUser?.id;
-      soundManager?.playSound(isWinner ? "win" : "lose");
-    } else if (state.isDraw) {
-      soundManager?.playSound("draw");
-    }
 
     // Handle AI's turn with timing that matches server
     if (
@@ -329,23 +321,6 @@ function GameComponent({ mode, onBack }: GameProps) {
     [socket, gameInvite, currentUser?.id, sdk?.channelId]
   );
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && socket) {
-        console.log("Tab hidden, cleaning up socket");
-        socket.disconnect();
-      } else if (!document.hidden && !socket?.connected) {
-        console.log("Tab visible, reconnecting socket");
-        socket?.connect();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [socket]);
-
   if (!participants || !currentUser) {
     return (
       <div className="relative min-h-screen bg-[#000000] text-white flex items-center justify-center overflow-hidden">
@@ -365,66 +340,169 @@ function GameComponent({ mode, onBack }: GameProps) {
   }
 
   return (
-    <div className="h-screen bg-[#000000] text-white overflow-hidden">
+    <div className="h-screen bg-[#000000] text-white p-4">
       {/* Scanline effect */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#33ff33]/10 to-transparent opacity-50 animate-scanline pointer-events-none" />
 
-      {/* Game content */}
-      <div className="relative h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Back button */}
+        <motion.div
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <Button
-            variant="ghost"
-            className="text-[#33ff33] hover:text-[#33ff33] hover:bg-[#33ff33]/10"
-            onClick={onBack}
+            variant="outline"
+            onClick={() => {
+              onBack();
+              soundManager?.playSound("click");
+            }}
+            className="mb-4 font-arcade bg-[#000000] border-2 border-[#33ff33] text-[#33ff33] hover:bg-[#33ff33] hover:text-black transition-colors duration-300"
           >
-            <MoveLeft className="w-6 h-6 mr-2" />
-            BACK
+            <MoveLeft className="w-4 h-4 mr-2" />
+            MAIN MENU
           </Button>
-          <div className="flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#33ff33]" />
-            <span className="font-arcade text-[#33ff33]">
-              {participants.participants.length} PLAYER
-              {participants.participants.length !== 1 ? "S" : ""}
-            </span>
-          </div>
-        </div>
+        </motion.div>
 
-        {/* Main content */}
-        <div className="flex-1 flex items-center justify-center">
-          {gameState ? (
-            <GameBoard
-              gameState={gameState}
-              currentUserId={currentUser.id}
-              onMove={handleMove}
-              onReset={handleReset}
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-6">
-              {sessionError ? (
-                <div className="text-center">
-                  <div className="font-arcade text-[#ff3333] mb-2">
-                    {sessionError}
+        {/* Game Area */}
+        <div className="flex-1 flex">
+          {/* Game Board */}
+          <div className="flex-1 p-8">
+            <div className="max-w-2xl mx-auto">
+              {gameState ? (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between mb-4 font-arcade">
+                    <div className="flex items-center gap-2 text-[#33ff33]">
+                      <span>🎮</span>
+                      <span>YOUR TURN!</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[#33ff33]">
+                      <span>YOU:</span>
+                      <span>
+                        {gameState.players.X === currentUser?.id ? "X" : "O"}
+                      </span>
+                      <span>TURN:</span>
+                      <span>
+                        {gameState.players[
+                          gameState.currentPlayer as keyof typeof gameState.players
+                        ] === currentUser?.id
+                          ? "YOUR TURN"
+                          : "OPPONENT'S TURN"}
+                      </span>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.reload()}
-                    className="font-arcade text-[#33ff33] border-[#33ff33] hover:bg-[#33ff33]/10"
-                  >
-                    RETRY
-                  </Button>
+                  <div className="bg-[#000000] border-2 border-[#33ff33] rounded-lg p-4 shadow-[0_0_10px_#33ff33]">
+                    <GameBoard
+                      gameState={gameState}
+                      currentUserId={currentUser?.id!}
+                      onMove={handleMove}
+                      onReset={handleReset}
+                    />
+                  </div>
                 </div>
               ) : (
-                <PlayerSelect
-                  participants={participants}
-                  onInvitePlayer={handleInvitePlayer}
-                  currentUserId={currentUser.id}
-                />
+                <div className="flex flex-col items-center justify-center h-[500px] bg-[#000000] border-2 border-[#33ff33] rounded-lg p-4">
+                  {sessionError ? (
+                    <p className="text-[#ff0000] font-arcade text-center">
+                      {sessionError}
+                    </p>
+                  ) : (
+                    <Loader2 className="w-8 h-8 text-[#33ff33] animate-spin" />
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
+
+          {/* Right Sidebar - Players */}
+          <div className="w-80 bg-[#000000] border-l-2 border-[#33ff33] p-6">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-arcade text-[#33ff33] mb-4">
+                  PLAYERS
+                </h2>
+                {participants && (
+                  <div className="space-y-3">
+                    {participants.participants.map((participant) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-[#000000] border border-[#33ff33]"
+                      >
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#33ff33]">
+                          <img
+                            src={
+                              participant.avatar
+                                ? `https://cdn.discordapp.com/avatars/${participant.id}/${participant.avatar}.png`
+                                : "https://cdn.discordapp.com/embed/avatars/0.png"
+                            }
+                            alt={participant.username}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-arcade text-[#33ff33]">
+                            {participant.username}
+                          </div>
+                          {gameState?.players && (
+                            <div className="text-sm text-[#ffff00] font-arcade">
+                              {gameState.players.X === participant.id
+                                ? "X"
+                                : "O"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {!gameState && !isAIGame && (
+                <div>
+                  <h2 className="text-xl font-arcade text-[#33ff33] mb-4">
+                    AVAILABLE PLAYERS
+                  </h2>
+                  <PlayerSelect
+                    participants={participants!}
+                    currentUserId={currentUser?.id!}
+                    onInvitePlayer={handleInvitePlayer}
+                  />
+                  {waitingForResponse && (
+                    <p className="text-center text-sm font-arcade text-[#33ff33] mt-2">
+                      WAITING FOR RESPONSE...
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Game Invite Modal */}
+      <AnimatePresence>
+        {gameInvite && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-[#000000] border-2 border-[#33ff33] p-6 rounded-xl shadow-[0_0_10px_#33ff33]"
+            >
+              <GameInvite
+                inviter={gameInvite.inviter}
+                onAccept={() => handleInviteResponse(true)}
+                onDecline={() => handleInviteResponse(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
