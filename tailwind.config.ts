@@ -97,30 +97,8 @@ const config = {
           '50%': { opacity: '0' },
         },
         scanline: {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100%)" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-20px)" },
-        },
-        glitch: {
-          "0%, 100%": { opacity: "0.2", transform: "translate(0)" },
-          "50%": { opacity: "0.1", transform: "translate(10px, 5px)" },
-          "25%, 75%": { opacity: "0.3", transform: "translate(-10px, -5px)" },
-        },
-        "float-delayed": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-20px)" },
-        },
-        "glitch-delayed": {
-          "0%, 100%": { opacity: "0.2", transform: "translate(0)" },
-          "50%": { opacity: "0.1", transform: "translate(10px, 5px)" },
-          "25%, 75%": { opacity: "0.3", transform: "translate(-10px, -5px)" },
-        },
-        pulse: {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.5" },
+          '0%': { transform: 'translateY(-100%)' },
+          '100%': { transform: 'translateY(100%)' },
         },
       },
       animation: {
@@ -130,11 +108,6 @@ const config = {
         'arcade-pulse': 'arcade-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'blink': 'blink 1s step-end infinite',
         'scanline': 'scanline 8s linear infinite',
-        'float': 'float 6s ease-in-out infinite',
-        'float-delayed': 'float 6s ease-in-out infinite 3s',
-        'glitch': 'glitch 10s ease-in-out infinite',
-        'glitch-delayed': 'glitch 10s ease-in-out infinite 5s',
-        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       fontFamily: {
         arcade: ["Press Start 2P", "cursive"],
